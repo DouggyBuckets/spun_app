@@ -98,7 +98,9 @@ CREATE TABLE favorites (
     entity_id       INTEGER NOT NULL,
     position        SMALLINT NOT NULL CHECK (position BETWEEN 1 AND 4),
     -- one slot per (user, type, position) — e.g. 4 favorite albums, 4 favorite songs, 4 favorite artists
-    UNIQUE (user_id, favorite_type, position)
+    UNIQUE (user_id, favorite_type, position),
+    -- prevents the same entity from occupying more than one slot at once
+    UNIQUE (user_id, favorite_type, entity_id)
 );
 
 -- ============================================================
@@ -128,12 +130,30 @@ CREATE TABLE reviews (
     entity_id       INTEGER NOT NULL,
     rating_id       INTEGER REFERENCES ratings(id) ON DELETE SET NULL,  -- optional link to a rating
     body            TEXT NOT NULL,
-    contains_spoilers BOOLEAN NOT NULL DEFAULT false,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_reviews_entity ON reviews(entity_type, entity_id);
 CREATE INDEX idx_reviews_user ON reviews(user_id);
+
+-- ============================================================
+-- SPINS — a listening log/diary, like Letterboxd's diary: distinct
+-- from ratings (one per user+entity, overwritten on re-rate), a spin
+-- is a discrete listening event and multiple are allowed per entity
+-- (relistens), each with its own date, optionally linked to a
+-- rating and/or a specific review from that listen.
+-- ============================================================
+CREATE TABLE spins (
+    id              SERIAL PRIMARY KEY,
+    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    entity_type     entity_type NOT NULL CHECK (entity_type IN ('album', 'song')),
+    entity_id       INTEGER NOT NULL,
+    listened_on     DATE NOT NULL DEFAULT CURRENT_DATE,
+    rating_id       INTEGER REFERENCES ratings(id) ON DELETE SET NULL,
+    review_id       INTEGER REFERENCES reviews(id) ON DELETE SET NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_spins_user ON spins(user_id, listened_on DESC);
 
 -- ============================================================
 -- LIKES — quick "heart" on a song or album
@@ -147,6 +167,21 @@ CREATE TABLE likes (
     UNIQUE (user_id, entity_type, entity_id)
 );
 CREATE INDEX idx_likes_entity ON likes(entity_type, entity_id);
+
+-- ============================================================
+-- LISTEN LATER — a personal queue, like Letterboxd's watchlist.
+-- Distinct from LISTS: singular per user, unranked, unnamed —
+-- not one of the user's own arbitrary curated lists.
+-- ============================================================
+CREATE TABLE listen_later (
+    id              SERIAL PRIMARY KEY,
+    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    entity_type     entity_type NOT NULL CHECK (entity_type IN ('album', 'song')),
+    entity_id       INTEGER NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (user_id, entity_type, entity_id)
+);
+CREATE INDEX idx_listen_later_entity ON listen_later(entity_type, entity_id);
 
 -- ============================================================
 -- LISTS — user-curated lists that can hold albums, songs, or artists

@@ -11,4 +11,6 @@ export const config = {
     databaseUrl: required("DATABASE_URL"),
     jwtSecret: required("JWT_SECRET"),
     corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
+    spotifyClientId: required("SPOTIFY_CLIENT_ID"),
+    spotifyClientSecret: required("SPOTIFY_CLIENT_SECRET"),
 };
