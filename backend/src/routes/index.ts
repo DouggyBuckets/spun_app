@@ -11,6 +11,7 @@ import listenLaterRoutes from "../modules/listenLater/listenLater.routes";
 import followRoutes from "../modules/follows/follows.routes";
 import spinRoutes from "../modules/spins/spins.routes";
 import feedRoutes from "../modules/feed/feed.routes";
+import recommendationRoutes from "../modules/recommendations/recommendations.routes";
 
 const router = Router();
 router.use("/auth", authRoutes);
@@ -25,5 +26,6 @@ router.use("/listen-later", listenLaterRoutes);
 router.use("/follows", followRoutes);
 router.use("/spins", spinRoutes);
 router.use("/feed", feedRoutes);
+router.use("/recommendations", recommendationRoutes);
 
 export default router;

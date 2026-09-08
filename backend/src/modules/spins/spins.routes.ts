@@ -63,6 +63,38 @@ router.post("/songs/:spotifyId", requireAuth, async (req, res) => {
     res.status(201).json(result.rows[0]);
 });
 
+const paginationSchema = z.object({
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    offset: z.coerce.number().int().min(0).default(0),
+});
+
+router.get("/:username", async (req, res) => {
+    const { limit, offset } = paginationSchema.parse(req.query);
+
+    const userResult = await db.query<{ id: number }>(
+        `SELECT id FROM users WHERE username = $1`, [req.params.username]
+    );
+    const user = userResult.rows[0];
+    if (!user) throw notFound("User not found");
+
+    const result = await db.query(
+        `SELECT s.id, s.entity_type, s.listened_on, s.created_at,
+            COALESCE(al.title, so.title) AS entity_name,
+            COALESCE(al.cover_url, songAlbum.cover_url) AS cover_url,
+            COALESCE(al.external_id, so.external_id) AS spotify_id,
+            songAlbum.external_id AS album_spotify_id
+        FROM spins s
+        LEFT JOIN albums al ON al.id = s.entity_id AND s.entity_type = 'album'
+        LEFT JOIN songs so ON so.id = s.entity_id AND s.entity_type = 'song'
+        LEFT JOIN albums songAlbum ON songAlbum.id = so.album_id
+        WHERE s.user_id = $1
+        ORDER BY s.listened_on DESC, s.created_at DESC
+        LIMIT $2 OFFSET $3`,
+        [user.id, limit, offset]
+    );
+    res.json(result.rows);
+});
+
 router.get("/", requireAuth, async (req, res) => {
     const result = await db.query(
         `SELECT id, entity_type, entity_id, listened_on, rating_id, review_id

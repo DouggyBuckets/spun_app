@@ -3,9 +3,27 @@ import { db } from "../../db";
 import { z } from "zod";
 import { requireAuth } from "../../middleware/auth";
 import { getOrCreateAlbum } from "../catalog/catalogImport";
-import { badRequest } from "../../errors";
+import { badRequest, notFound } from "../../errors";
 
 const router = Router();
+
+router.get("/:username", async (req, res) => {
+    const userResult = await db.query<{ id: number }>(
+        `SELECT id FROM users WHERE username = $1`, [req.params.username]
+    );
+    const user = userResult.rows[0];
+    if (!user) throw notFound("User not found");
+
+    const result = await db.query(
+        `SELECT f.position, al.external_id AS spotify_id, al.title, al.cover_url
+        FROM favorites f
+        JOIN albums al ON al.id = f.entity_id AND f.favorite_type = 'album'
+        WHERE f.user_id = $1
+        ORDER BY f.position`,
+        [user.id]
+    );
+    res.json(result.rows);
+});
 
 const favoriteAlbumSchema = z.object({
     spotifyId: z.string(),

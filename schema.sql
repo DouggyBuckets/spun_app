@@ -136,6 +136,15 @@ CREATE TABLE reviews (
 CREATE INDEX idx_reviews_entity ON reviews(entity_type, entity_id);
 CREATE INDEX idx_reviews_user ON reviews(user_id);
 
+CREATE TABLE review_likes (
+    id              SERIAL PRIMARY KEY,
+    review_id       INTEGER NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
+    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (review_id, user_id)
+);
+CREATE INDEX idx_review_likes_review ON review_likes(review_id);
+
 -- ============================================================
 -- SPINS — a listening log/diary, like Letterboxd's diary: distinct
 -- from ratings (one per user+entity, overwritten on re-rate), a spin

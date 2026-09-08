@@ -11,6 +11,53 @@ const rateSchema = z.object({
     score: z.number().int().min(1).max(10),
 });
 
+async function getAggregateScore(entityType: "album" | "song", entityId: number) {
+    const result = await db.query<{ average: string | null; count: string }>(
+        `SELECT AVG(score)::numeric(10,2) AS average, COUNT(*) AS count
+        FROM ratings WHERE entity_type = $1 AND entity_id = $2`,
+        [entityType, entityId]
+    );
+    const row = result.rows[0]!;
+    return {
+        averageScore: row.average !== null ? Number(row.average) : null,
+        ratingCount: Number(row.count),
+    };
+}
+
+router.get("/albums/:spotifyId", requireAuth, async (req, res) => {
+    const albumId = await getAlbumIdBySpotifyId(req.params.spotifyId as string);
+    if (!albumId) {
+        res.json({ score: null, averageScore: null, ratingCount: 0 });
+        return;
+    }
+
+    const [result, aggregate] = await Promise.all([
+        db.query<{ score: number }>(
+            `SELECT score FROM ratings WHERE user_id = $1 AND entity_type = 'album' AND entity_id = $2`,
+            [req.user!.id, albumId]
+        ),
+        getAggregateScore("album", albumId),
+    ]);
+    res.json({ score: result.rows[0]?.score ?? null, ...aggregate });
+});
+
+router.get("/songs/:spotifyId", requireAuth, async (req, res) => {
+    const songId = await getSongIdBySpotifyId(req.params.spotifyId as string);
+    if (!songId) {
+        res.json({ score: null, averageScore: null, ratingCount: 0 });
+        return;
+    }
+
+    const [result, aggregate] = await Promise.all([
+        db.query<{ score: number }>(
+            `SELECT score FROM ratings WHERE user_id = $1 AND entity_type = 'song' AND entity_id = $2`,
+            [req.user!.id, songId]
+        ),
+        getAggregateScore("song", songId),
+    ]);
+    res.json({ score: result.rows[0]?.score ?? null, ...aggregate });
+});
+
 router.post("/albums/:spotifyId", requireAuth, async (req, res) => {
     const { score } = rateSchema.parse(req.body);
     const albumId = await getOrCreateAlbum(req.params.spotifyId as string);

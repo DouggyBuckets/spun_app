@@ -119,11 +119,15 @@ interface SpotifyArtistAlbumsResponse {
 
 export async function getArtistAlbums(spotifyArtistId: string) {
     const token = await getSpotifyToken();
-    const response = await fetch(`https://api.spotify.com/v1/artists/${spotifyArtistId}/albums`, {
-        headers: {
-            "Authorization": `Bearer ${token}`
+    const params = new URLSearchParams({ include_groups: "album,single" });
+    const response = await fetch(
+        `https://api.spotify.com/v1/artists/${spotifyArtistId}/albums?${params}`,
+        {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
         }
-    });
+    );
 
     if (!response.ok) throw notFound("Artist not found");
     return await response.json() as SpotifyArtistAlbumsResponse;

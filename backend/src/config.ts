@@ -13,4 +13,9 @@ export const config = {
     corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
     spotifyClientId: required("SPOTIFY_CLIENT_ID"),
     spotifyClientSecret: required("SPOTIFY_CLIENT_SECRET"),
+    // Optional (not required()) so the server keeps running before these are set up —
+    // the avatar upload route checks for them itself and fails only that request.
+    cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    cloudinaryApiKey: process.env.CLOUDINARY_API_KEY,
+    cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
 };

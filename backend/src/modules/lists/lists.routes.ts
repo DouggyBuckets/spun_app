@@ -26,6 +26,27 @@ router.post("/", requireAuth, async (req, res) => {
     res.status(201).json(result.rows[0]);
 });
 
+router.get("/user/:username", optionalAuth, async (req, res) => {
+    const userResult = await db.query<{ id: number }>(
+        `SELECT id FROM users WHERE username = $1`, [req.params.username]
+    );
+    const user = userResult.rows[0];
+    if (!user) throw notFound("User not found");
+
+    const isOwner = req.user?.id === user.id;
+    const result = await db.query(
+        `SELECT l.id, l.title, l.description, l.is_ranked, l.is_public, l.created_at,
+            COUNT(li.id)::int AS item_count
+        FROM lists l
+        LEFT JOIN list_items li ON li.list_id = l.id
+        WHERE l.user_id = $1 AND (l.is_public = true OR $2 = true)
+        GROUP BY l.id
+        ORDER BY l.created_at DESC`,
+        [user.id, isOwner]
+    );
+    res.json(result.rows);
+});
+
 router.get("/:id", optionalAuth, async (req, res) => {
     const listResult = await db.query<{ id: number; user_id: number; title: string; description: string | null; is_ranked: boolean, is_public: boolean}>(
         `SELECT * FROM lists WHERE id = $1`, [req.params.id]
@@ -38,7 +59,12 @@ router.get("/:id", optionalAuth, async (req, res) => {
     }
 
     const itemResult = await db.query(
-        `SELECT * FROM list_items WHERE list_id = $1 ORDER BY position`,
+        `SELECT li.id, li.entity_type, li.position,
+            al.external_id AS spotify_id, al.title, al.cover_url
+        FROM list_items li
+        JOIN albums al ON al.id = li.entity_id AND li.entity_type = 'album'
+        WHERE li.list_id = $1
+        ORDER BY li.position NULLS LAST, li.id`,
         [list.id]
     );
     res.json({ ...list, items: itemResult.rows });
@@ -98,6 +124,31 @@ router.post("/:id/items/albums/:spotifyId", requireAuth, async (req, res) => {
     res.status(201).json({ message: "Added to list successfully" });
 });
 
+
+const reorderSchema = z.object({
+    itemIds: z.array(z.number().int()).min(1),
+});
+
+router.patch("/:id/items/reorder", requireAuth, async (req, res) => {
+    const { itemIds } = reorderSchema.parse(req.body);
+
+    const listResult = await db.query<{ id: number; user_id: number }>(
+        `SELECT id, user_id FROM lists WHERE id = $1`,
+        [req.params.id]
+    );
+    const list = listResult.rows[0];
+    if (!list || list.user_id !== req.user!.id) throw notFound("List not found");
+
+    await Promise.all(
+        itemIds.map((itemId, index) =>
+            db.query(
+                `UPDATE list_items SET position = $1 WHERE id = $2 AND list_id = $3`,
+                [index + 1, itemId, list.id]
+            )
+        )
+    );
+    res.json({ message: "Reordered successfully" });
+});
 
 router.delete("/:id/items/albums/:spotifyId", requireAuth, async (req, res) => {
     const listResult = await db.query<{ id: number; user_id: number; is_ranked: boolean}>(

@@ -12,6 +12,32 @@ import {
 
 const router = Router();
 
+router.get("/albums/:spotifyId", requireAuth, async (req, res) => {
+    const albumId = await getAlbumIdBySpotifyId(req.params.spotifyId as string);
+    if (!albumId) {
+        res.json({ inQueue: false });
+        return;
+    }
+    const result = await db.query(
+        `SELECT id FROM listen_later WHERE user_id = $1 AND entity_type = 'album' AND entity_id = $2`,
+        [req.user!.id, albumId]
+    );
+    res.json({ inQueue: !!result.rows[0] });
+});
+
+router.get("/songs/:spotifyId", requireAuth, async (req, res) => {
+    const songId = await getSongIdBySpotifyId(req.params.spotifyId as string);
+    if (!songId) {
+        res.json({ inQueue: false });
+        return;
+    }
+    const result = await db.query(
+        `SELECT id FROM listen_later WHERE user_id = $1 AND entity_type = 'song' AND entity_id = $2`,
+        [req.user!.id, songId]
+    );
+    res.json({ inQueue: !!result.rows[0] });
+});
+
 router.post("/albums/:spotifyId", requireAuth, async (req, res) => {
     const albumId = await getOrCreateAlbum(req.params.spotifyId as string);
     await db.query(
@@ -63,8 +89,17 @@ router.delete("/songs/:spotifyId", requireAuth, async (req, res) => {
 
 router.get("/", requireAuth, async (req, res) => {
     const result = await db.query(
-        `SELECT id, entity_type, entity_id, created_at FROM listen_later
-        WHERE user_id = $1 ORDER BY created_at DESC`,
+        `SELECT ll.id, ll.entity_type, ll.created_at,
+            COALESCE(al.title, so.title) AS entity_name,
+            COALESCE(al.cover_url, songAlbum.cover_url) AS cover_url,
+            COALESCE(al.external_id, so.external_id) AS spotify_id,
+            songAlbum.external_id AS album_spotify_id
+        FROM listen_later ll
+        LEFT JOIN albums al ON al.id = ll.entity_id AND ll.entity_type = 'album'
+        LEFT JOIN songs so ON so.id = ll.entity_id AND ll.entity_type = 'song'
+        LEFT JOIN albums songAlbum ON songAlbum.id = so.album_id
+        WHERE ll.user_id = $1
+        ORDER BY ll.created_at DESC`,
         [req.user!.id]
     );
     res.json(result.rows);

@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import { getToken } from "./tokenStorage";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -9,7 +9,7 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-    const token = await SecureStore.getItemAsync('api_token');
+    const token = await getToken();
     const headers = {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),

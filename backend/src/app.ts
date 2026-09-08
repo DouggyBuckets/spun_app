@@ -10,7 +10,8 @@ export function createApp() {
 
     app.use(helmet());
     app.use(cors({ origin: config.corsOrigin }));
-    app.use(express.json());
+    // Default 100kb is too small for a base64-encoded avatar image in the request body.
+    app.use(express.json({ limit: "8mb" }));
 
     app.get("/health", (_req, res) => res.json( { status: "ok" }));
 
