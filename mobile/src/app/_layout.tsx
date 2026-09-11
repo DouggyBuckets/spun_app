@@ -1,12 +1,21 @@
 import { Stack } from "expo-router";
+import {
+    useFonts,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+} from "@expo-google-fonts/space-grotesk";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { View, Text, StyleSheet } from "react-native";
 import { colors } from "../constants/theme";
 
 function RootLayoutContent() {
     const { isLoading } = useAuth();
+    const [fontsLoaded] = useFonts({
+        SpaceGrotesk_600SemiBold,
+        SpaceGrotesk_700Bold,
+    });
 
-    if (isLoading) {
+    if (isLoading || !fontsLoaded) {
         return (
             <View style={styles.loadingContainer}>
                 <Text style={styles.loadingText}>Loading...</Text>
@@ -17,9 +26,8 @@ function RootLayoutContent() {
     return (
         <Stack
             screenOptions={{
+                headerShown: false,
                 contentStyle: { backgroundColor: colors.background },
-                headerStyle: { backgroundColor: colors.surface },
-                headerTintColor: colors.text,
             }}
         />
     );

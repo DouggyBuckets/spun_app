@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { View, Text, TextInput, Switch, Pressable, StyleSheet } from "react-native";
+import { View, Text, TextInput, Switch, StyleSheet } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { apiFetch, ApiError } from "../../api/client";
-import { colors } from "../../constants/theme";
+import { colors, spacing, radius } from "../../constants/theme";
+import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 export default function NewListScreen() {
     const { albumId } = useLocalSearchParams<{ albumId?: string }>();
@@ -41,6 +43,9 @@ export default function NewListScreen() {
 
     return (
         <View style={styles.container}>
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
             <TextInput
                 style={styles.input}
                 placeholder="Title"
@@ -59,22 +64,25 @@ export default function NewListScreen() {
                 multiline
                 maxLength={2000}
             />
-            <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>Ranked</Text>
-                <Switch value={isRanked} onValueChange={setIsRanked} />
-            </View>
-            <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>Public</Text>
-                <Switch value={isPublic} onValueChange={setIsPublic} />
+            <View style={styles.switchCard}>
+                <View style={styles.switchRow}>
+                    <Text style={styles.switchLabel}>Ranked</Text>
+                    <Switch value={isRanked} onValueChange={setIsRanked} />
+                </View>
+                <View style={styles.switchDivider} />
+                <View style={styles.switchRow}>
+                    <Text style={styles.switchLabel}>Public</Text>
+                    <Switch value={isPublic} onValueChange={setIsPublic} />
+                </View>
             </View>
             {error && <Text style={styles.error}>{error}</Text>}
-            <Pressable
+            <Touchable
                 style={[styles.button, !title.trim() && styles.buttonDisabled]}
                 onPress={handleCreate}
                 disabled={isSaving || !title.trim()}
             >
                 <Text style={styles.buttonText}>{isSaving ? "Creating..." : "Create list"}</Text>
-            </Pressable>
+            </Touchable>
         </View>
     );
 }
@@ -83,13 +91,14 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
-        padding: 16,
-        gap: 12,
+        padding: spacing.md,
+        gap: spacing.sm,
     },
+    topBar: {},
     input: {
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
+        borderRadius: radius.sm,
         padding: 12,
         backgroundColor: colors.surface,
         color: colors.text,
@@ -97,27 +106,39 @@ const styles = StyleSheet.create({
     textArea: {
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
+        borderRadius: radius.sm,
         padding: 12,
         backgroundColor: colors.surface,
         color: colors.text,
         minHeight: 80,
         textAlignVertical: "top",
     },
+    switchCard: {
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        paddingHorizontal: spacing.md,
+    },
     switchRow: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
+        paddingVertical: spacing.sm,
+    },
+    switchDivider: {
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: colors.border,
     },
     switchLabel: {
         color: colors.text,
     },
     button: {
         backgroundColor: colors.accent,
-        borderRadius: 8,
+        borderRadius: radius.sm,
         paddingVertical: 12,
         alignItems: "center",
-        marginTop: 8,
+        marginTop: spacing.xs,
     },
     buttonDisabled: {
         opacity: 0.5,

@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { View, Text, Image, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import { useState, useCallback } from "react";
+import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
-import { useCallback } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { apiFetch, ApiError } from "../../api/client";
-import { colors } from "../../constants/theme";
+import { colors, spacing, radius } from "../../constants/theme";
+import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 type Tab = "followers" | "following";
 
@@ -49,9 +51,12 @@ export default function FollowsScreen() {
 
     return (
         <View style={styles.container}>
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
             <View style={styles.tabs}>
                 {(["followers", "following"] as Tab[]).map((t) => (
-                    <Pressable
+                    <Touchable
                         key={t}
                         style={[styles.tab, tab === t && styles.tabActive]}
                         onPress={() => setTab(t)}
@@ -59,7 +64,7 @@ export default function FollowsScreen() {
                         <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
                             {t[0].toUpperCase() + t.slice(1)}
                         </Text>
-                    </Pressable>
+                    </Touchable>
                 ))}
             </View>
 
@@ -76,7 +81,7 @@ export default function FollowsScreen() {
                         </Text>
                     }
                     renderItem={({ item }) => (
-                        <Pressable
+                        <Touchable
                             style={styles.row}
                             onPress={() => router.push(`/profile/${item.username}`)}
                         >
@@ -95,7 +100,8 @@ export default function FollowsScreen() {
                                 </Text>
                                 <Text style={styles.username}>@{item.username}</Text>
                             </View>
-                        </Pressable>
+                            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                        </Touchable>
                     )}
                 />
             )}
@@ -107,21 +113,27 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
-        padding: 16,
+        padding: spacing.md,
+    },
+    topBar: {
+        marginBottom: spacing.sm,
     },
     tabs: {
         flexDirection: "row",
-        gap: 8,
-        marginBottom: 12,
+        gap: spacing.sm,
+        marginBottom: spacing.md,
     },
     tab: {
         paddingVertical: 6,
-        paddingHorizontal: 14,
-        borderRadius: 16,
+        paddingHorizontal: spacing.md,
+        borderRadius: radius.pill,
         backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     tabActive: {
         backgroundColor: colors.accent,
+        borderColor: colors.accent,
     },
     tabText: {
         color: colors.textMuted,
@@ -131,35 +143,39 @@ const styles = StyleSheet.create({
         color: colors.text,
     },
     spinner: {
-        marginVertical: 12,
+        marginVertical: spacing.md,
     },
     error: {
         color: colors.error,
-        marginBottom: 12,
+        marginBottom: spacing.md,
     },
     emptyText: {
         color: colors.textMuted,
         textAlign: "center",
-        marginTop: 24,
+        marginTop: spacing.lg,
     },
     row: {
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 10,
-        gap: 12,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        gap: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginBottom: spacing.xs,
     },
     avatar: {
         width: 44,
         height: 44,
-        borderRadius: 22,
+        borderRadius: radius.pill,
     },
     avatarPlaceholder: {
         width: 44,
         height: 44,
-        borderRadius: 22,
-        backgroundColor: colors.surface,
-        borderWidth: 1,
-        borderColor: colors.border,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surfaceRaised,
         justifyContent: "center",
         alignItems: "center",
     },

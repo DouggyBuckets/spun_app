@@ -1,9 +1,12 @@
 import { useCallback, useState } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../context/AuthContext";
 import { apiFetch, ApiError } from "../../api/client";
-import { colors } from "../../constants/theme";
+import { colors, spacing, radius } from "../../constants/theme";
+import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 interface ListSummary {
     id: number;
@@ -60,12 +63,16 @@ export default function AddToListScreen() {
 
     return (
         <View style={styles.container}>
-            <Pressable
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
+            <Touchable
                 style={styles.newListRow}
                 onPress={() => router.push({ pathname: "/lists/new", params: { albumId } })}
             >
-                <Text style={styles.newListText}>+ Create new list</Text>
-            </Pressable>
+                <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
+                <Text style={styles.newListText}>Create new list</Text>
+            </Touchable>
 
             {isLoading && <ActivityIndicator color={colors.accent} style={styles.spinner} />}
             {error && <Text style={styles.error}>{error}</Text>}
@@ -81,11 +88,12 @@ export default function AddToListScreen() {
                 renderItem={({ item }) => {
                     const isAdded = addedIds.has(item.id);
                     return (
-                        <Pressable
+                        <Touchable
                             style={styles.row}
                             onPress={() => handleAdd(item.id)}
                             disabled={isAdded || addingId === item.id}
                         >
+                            <Ionicons name="list-outline" size={18} color={colors.textMuted} />
                             <View style={styles.rowText}>
                                 <Text style={styles.listTitle}>{item.title}</Text>
                                 <Text style={styles.listMeta}>
@@ -95,7 +103,7 @@ export default function AddToListScreen() {
                             <Text style={[styles.status, isAdded && styles.statusAdded]}>
                                 {addingId === item.id ? "Adding..." : isAdded ? "Added ✓" : "Add"}
                             </Text>
-                        </Pressable>
+                        </Touchable>
                     );
                 }}
             />
@@ -107,37 +115,50 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
-        padding: 16,
+        padding: spacing.md,
+    },
+    topBar: {
+        marginBottom: spacing.sm,
     },
     newListRow: {
-        paddingVertical: 12,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: colors.border,
-        marginBottom: 8,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginBottom: spacing.sm,
     },
     newListText: {
         color: colors.accent,
         fontWeight: "600",
     },
     spinner: {
-        marginVertical: 12,
+        marginVertical: spacing.md,
     },
     error: {
         color: colors.error,
-        marginBottom: 12,
+        marginBottom: spacing.md,
     },
     emptyText: {
         color: colors.textMuted,
         textAlign: "center",
-        marginTop: 24,
+        marginTop: spacing.lg,
     },
     row: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
-        paddingVertical: 12,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: colors.border,
+        gap: spacing.sm,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginBottom: spacing.xs,
     },
     rowText: {
         flex: 1,

@@ -1,237 +1,340 @@
-import { useState } from "react";
-import {
-    View,
-    TextInput,
-    FlatList,
-    Image,
-    Text,
-    Pressable,
-    StyleSheet,
-    ActivityIndicator,
-} from "react-native";
-import { Redirect, router } from "expo-router";
+import { useCallback, useState } from "react";
+import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import { Redirect, useFocusEffect, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch, ApiError } from "../api/client";
-import { colors } from "../constants/theme";
+import { colors, spacing, radius, fonts } from "../constants/theme";
+import { Touchable } from "../components/Touchable";
 
-type SearchType = "albums" | "tracks" | "artists" | "users";
+const LIMIT = 20;
 
-interface NormalizedResult {
-    id: string;
-    title: string;
-    subtitle: string;
-    imageUrl: string | null;
-    type: "album" | "track" | "artist" | "user";
-    albumId?: string;
-    albumName?: string;
-    username?: string;
+interface FeedItem {
+    activity_type: "rating" | "review" | "like" | "spin" | "follow";
+    user_id: number;
+    username: string;
+    display_name: string | null;
+    entity_type: "album" | "song" | "user";
+    entity_id: number;
+    reference_id: number | null;
+    entity_name: string | null;
+    spotify_id: string | null;
+    album_spotify_id: string | null;
+    score: number | null;
+    body: string | null;
+    created_at: string;
 }
 
-interface AlbumSearchResponse {
-    albums: {
-        items: {
-            id: string;
-            name: string;
-            images: { url: string }[];
-            artists: { id: string; name: string }[];
-        }[];
-    };
-}
-
-interface TrackSearchResponse {
-    tracks: {
-        items: {
-            id: string;
-            name: string;
-            artists: { id: string; name: string }[];
-            album: { id: string; name: string; images: { url: string }[] };
-        }[];
-    };
-}
-
-interface ArtistSearchResponse {
-    artists: {
-        items: { id: string; name: string; images: { url: string }[] }[];
-    };
-}
-
-interface UserSearchResult {
+interface PopularReview {
     id: number;
+    entity_type: "album" | "song";
+    body: string;
+    created_at: string;
+    score: number | null;
     username: string;
     display_name: string | null;
     avatar_url: string | null;
+    entity_name: string | null;
+    cover_url: string | null;
+    spotify_id: string | null;
+    album_spotify_id: string | null;
+    like_count: number;
+    liked_by_me: boolean;
 }
 
-async function searchByType(type: SearchType, query: string): Promise<NormalizedResult[]> {
-    const q = encodeURIComponent(query);
-
-    if (type === "albums") {
-        const data = await apiFetch<AlbumSearchResponse>(`/catalog/search?query=${q}`);
-        return data.albums.items.map((album) => ({
-            id: album.id,
-            title: album.name,
-            subtitle: album.artists.map((a) => a.name).join(", "),
-            imageUrl: album.images[0]?.url ?? null,
-            type: "album" as const,
-        }));
-    }
-
-    if (type === "tracks") {
-        const data = await apiFetch<TrackSearchResponse>(`/catalog/search/tracks?query=${q}`);
-        return data.tracks.items.map((track) => ({
-            id: track.id,
-            title: track.name,
-            subtitle: track.artists.map((a) => a.name).join(", "),
-            imageUrl: track.album.images[0]?.url ?? null,
-            type: "track" as const,
-            albumId: track.album.id,
-            albumName: track.album.name,
-        }));
-    }
-
-    if (type === "artists") {
-        const data = await apiFetch<ArtistSearchResponse>(`/catalog/search/artists?query=${q}`);
-        return data.artists.items.map((artist) => ({
-            id: artist.id,
-            title: artist.name,
-            subtitle: "Artist",
-            imageUrl: artist.images[0]?.url ?? null,
-            type: "artist" as const,
-        }));
-    }
-
-    const data = await apiFetch<UserSearchResult[]>(`/users?query=${q}`);
-    return data.map((result) => ({
-        id: String(result.id),
-        title: result.display_name ?? result.username,
-        subtitle: `@${result.username}`,
-        imageUrl: result.avatar_url,
-        type: "user" as const,
-        username: result.username,
-    }));
+interface PopularAlbum {
+    spotifyId: string;
+    title: string;
+    coverUrl: string | null;
+    averageScore: number;
+    ratingCount: number;
 }
 
-export default function Index() {
+const ACTIVITY_ICONS: Record<FeedItem["activity_type"], keyof typeof Ionicons.glyphMap> = {
+    rating: "star",
+    review: "create-outline",
+    like: "heart",
+    spin: "play-circle-outline",
+    follow: "person-add-outline",
+};
+
+function activityIconColor(type: FeedItem["activity_type"]): string {
+    if (type === "rating") return colors.rating;
+    if (type === "like") return colors.like;
+    return colors.accent;
+}
+
+function describeActivity(item: FeedItem): string {
+    const entity = item.entity_name ?? "something";
+    switch (item.activity_type) {
+        case "rating":
+            return `rated ${entity}${item.score !== null ? ` ${item.score / 2}/5` : ""}`;
+        case "review":
+            return `reviewed ${entity}`;
+        case "like":
+            return `liked ${entity}`;
+        case "spin":
+            return `logged ${entity}`;
+        case "follow":
+            return `followed ${entity}`;
+    }
+}
+
+function goToFeedEntity(item: FeedItem) {
+    if (item.activity_type === "follow") {
+        if (item.entity_name) router.push(`/profile/${item.entity_name}`);
+        return;
+    }
+    goToReviewEntity(item);
+}
+
+function goToReviewEntity(item: { entity_type: "album" | "song" | "user"; spotify_id: string | null; album_spotify_id: string | null }) {
+    if (item.entity_type === "album" && item.spotify_id) {
+        router.push(`/album/${item.spotify_id}`);
+    } else if (item.album_spotify_id) {
+        router.push(`/album/${item.album_spotify_id}`);
+    }
+}
+
+export default function HomeScreen() {
     const { user, logout } = useAuth();
-    const [query, setQuery] = useState("");
-    const [searchType, setSearchType] = useState<SearchType>("albums");
-    const [results, setResults] = useState<NormalizedResult[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
+    const [items, setItems] = useState<FeedItem[]>([]);
+    const [popular, setPopular] = useState<PopularReview[]>([]);
+    const [popularAlbums, setPopularAlbums] = useState<PopularAlbum[]>([]);
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    useFocusEffect(
+        useCallback(() => {
+            let cancelled = false;
+            (async () => {
+                setIsLoading(true);
+                setError(null);
+                try {
+                    const [feedData, popularData, popularAlbumsData] = await Promise.all([
+                        apiFetch<FeedItem[]>(`/feed?limit=${LIMIT}&offset=0`),
+                        apiFetch<PopularReview[]>(`/reviews/popular?limit=5`),
+                        apiFetch<PopularAlbum[]>(`/ratings/popular-albums?limit=10`),
+                    ]);
+                    if (cancelled) return;
+                    setItems(feedData);
+                    setOffset(feedData.length);
+                    setHasMore(feedData.length === LIMIT);
+                    setPopular(popularData);
+                    setPopularAlbums(popularAlbumsData);
+                } catch (err) {
+                    if (!cancelled) {
+                        setError(err instanceof ApiError ? err.message : "Something went wrong");
+                    }
+                } finally {
+                    if (!cancelled) setIsLoading(false);
+                }
+            })();
+            return () => {
+                cancelled = true;
+            };
+        }, [])
+    );
+
+    async function handleLoadMore() {
+        if (isLoadingMore || !hasMore) return;
+        setIsLoadingMore(true);
+        try {
+            const data = await apiFetch<FeedItem[]>(`/feed?limit=${LIMIT}&offset=${offset}`);
+            setItems((prev) => [...prev, ...data]);
+            setOffset((prev) => prev + data.length);
+            setHasMore(data.length === LIMIT);
+        } catch (err) {
+            setError(err instanceof ApiError ? err.message : "Something went wrong");
+        } finally {
+            setIsLoadingMore(false);
+        }
+    }
 
     if (!user) {
         return <Redirect href="/login" />;
     }
 
-    async function handleSearch() {
-        if (!query.trim()) return;
-        setError(null);
-        setIsSearching(true);
-        try {
-            const normalized = await searchByType(searchType, query);
-            setResults(normalized);
-        } catch (err) {
-            setError(err instanceof ApiError ? err.message : "Something went wrong");
-        } finally {
-            setIsSearching(false);
-        }
-    }
-
-    function handleSelectType(type: SearchType) {
-        setSearchType(type);
-        setResults([]);
+    if (isLoading) {
+        return (
+            <View style={styles.centered}>
+                <ActivityIndicator color={colors.accent} />
+            </View>
+        );
     }
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.username}>{user.username}</Text>
+                <Text style={styles.brand}>Spun</Text>
                 <View style={styles.headerLinks}>
-                    <Pressable onPress={() => router.push("/feed")}>
-                        <Text style={styles.link}>Feed</Text>
-                    </Pressable>
-                    <Pressable onPress={() => router.push(`/profile/${user.username}`)}>
-                        <Text style={styles.link}>Profile</Text>
-                    </Pressable>
-                    <Pressable onPress={() => router.push("/recommendations")}>
-                        <Text style={styles.link}>Inbox</Text>
-                    </Pressable>
-                    <Pressable onPress={logout}>
-                        <Text style={styles.link}>Log out</Text>
-                    </Pressable>
+                    <Touchable style={styles.headerIcon} onPress={() => router.push("/search")}>
+                        <Ionicons name="search" size={18} color={colors.text} />
+                    </Touchable>
+                    <Touchable
+                        style={styles.headerIcon}
+                        onPress={() => router.push(`/profile/${user.username}`)}
+                    >
+                        <Ionicons name="person-outline" size={18} color={colors.text} />
+                    </Touchable>
+                    <Touchable style={styles.headerIcon} onPress={() => router.push("/recommendations")}>
+                        <Ionicons name="mail-outline" size={18} color={colors.text} />
+                    </Touchable>
+                    <Touchable style={styles.headerIcon} onPress={logout}>
+                        <Ionicons name="log-out-outline" size={18} color={colors.textMuted} />
+                    </Touchable>
                 </View>
             </View>
 
-            <TextInput
-                style={styles.input}
-                placeholder={`Search ${searchType}...`}
-                placeholderTextColor={colors.textMuted}
-                value={query}
-                onChangeText={setQuery}
-                onSubmitEditing={handleSearch}
-                returnKeyType="search"
-            />
-
-            <View style={styles.tabs}>
-                {(["albums", "tracks", "artists", "users"] as SearchType[]).map((type) => (
-                    <Pressable
-                        key={type}
-                        style={[styles.tab, searchType === type && styles.tabActive]}
-                        onPress={() => handleSelectType(type)}
-                    >
-                        <Text style={[styles.tabText, searchType === type && styles.tabTextActive]}>
-                            {type[0].toUpperCase() + type.slice(1)}
-                        </Text>
-                    </Pressable>
-                ))}
-            </View>
-
-            {isSearching && <ActivityIndicator color={colors.accent} style={styles.spinner} />}
             {error && <Text style={styles.error}>{error}</Text>}
 
             <FlatList
-                data={results}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <Pressable
-                        style={styles.resultRow}
-                        onPress={() => {
-                            if (item.type === "album") {
-                                router.push(`/album/${item.id}`);
-                            } else if (item.type === "track") {
-                                router.push({
-                                    pathname: "/song/[id]",
-                                    params: {
-                                        id: item.id,
-                                        albumId: item.albumId!,
-                                        name: item.title,
-                                        artistNames: item.subtitle,
-                                        albumName: item.albumName!,
-                                        imageUrl: item.imageUrl ?? undefined,
-                                    },
-                                });
-                            } else if (item.type === "artist") {
-                                router.push({
-                                    pathname: "/artist/[id]",
-                                    params: { id: item.id, name: item.title },
-                                });
-                            } else {
-                                router.push(`/profile/${item.username}`);
-                            }
-                        }}
-                    >
-                        {item.imageUrl && (
-                            <Image source={{ uri: item.imageUrl }} style={styles.cover} />
+                data={items}
+                keyExtractor={(item, index) => `${item.activity_type}-${item.reference_id}-${index}`}
+                ListHeaderComponent={
+                    <View>
+                        <Text style={styles.sectionTitle}>Popular Albums</Text>
+                        {popularAlbums.length > 0 ? (
+                            <FlatList
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                data={popularAlbums}
+                                keyExtractor={(album) => album.spotifyId}
+                                style={styles.popularAlbumsRow}
+                                contentContainerStyle={styles.popularAlbumsContent}
+                                renderItem={({ item }) => (
+                                    <Touchable
+                                        style={styles.albumCard}
+                                        onPress={() => router.push(`/album/${item.spotifyId}`)}
+                                    >
+                                        {item.coverUrl ? (
+                                            <Image source={{ uri: item.coverUrl }} style={styles.albumCover} />
+                                        ) : (
+                                            <View style={styles.albumCover} />
+                                        )}
+                                        <Text style={styles.albumTitle} numberOfLines={1}>
+                                            {item.title}
+                                        </Text>
+                                        <View style={styles.scorePill}>
+                                            <Ionicons name="star" size={10} color={colors.rating} />
+                                            <Text style={styles.scorePillText}>
+                                                {(item.averageScore / 2).toFixed(1)}
+                                            </Text>
+                                        </View>
+                                    </Touchable>
+                                )}
+                            />
+                        ) : (
+                            <Text style={styles.emptySectionText}>
+                                No ratings yet — rate an album to get this started.
+                            </Text>
                         )}
-                        <View style={styles.resultText}>
-                            <Text style={styles.resultTitle}>{item.title}</Text>
-                            <Text style={styles.resultArtist}>{item.subtitle}</Text>
-                        </View>
-                    </Pressable>
-                )}
+
+                        <Text style={styles.sectionTitle}>Popular Reviews</Text>
+                        {popular.length > 0 ? (
+                            <View style={styles.popularSection}>
+                                {popular.map((review) => (
+                                    <Touchable
+                                        key={review.id}
+                                        style={styles.popularCard}
+                                        onPress={() => goToReviewEntity(review)}
+                                    >
+                                        {review.cover_url ? (
+                                            <Image
+                                                source={{ uri: review.cover_url }}
+                                                style={styles.popularCover}
+                                            />
+                                        ) : (
+                                            <View style={styles.popularCover} />
+                                        )}
+                                        <View style={styles.popularText}>
+                                            <View style={styles.popularTitleRow}>
+                                                <Text style={styles.popularEntity} numberOfLines={1}>
+                                                    {review.entity_name ?? "Unknown"}
+                                                </Text>
+                                                {review.score !== null && (
+                                                    <View style={styles.scorePill}>
+                                                        <Ionicons name="star" size={10} color={colors.rating} />
+                                                        <Text style={styles.scorePillText}>
+                                                            {review.score / 2}/5
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <Text style={styles.popularAuthor}>
+                                                by {review.display_name ?? review.username}
+                                            </Text>
+                                            <Text style={styles.popularBody} numberOfLines={2}>
+                                                {review.body}
+                                            </Text>
+                                            <View style={styles.popularLikeRow}>
+                                                <Ionicons name="heart" size={12} color={colors.like} />
+                                                <Text style={styles.popularLikeCount}>{review.like_count}</Text>
+                                            </View>
+                                        </View>
+                                    </Touchable>
+                                ))}
+                            </View>
+                        ) : (
+                            <Text style={styles.emptySectionText}>
+                                No reviews yet — be the first to write one.
+                            </Text>
+                        )}
+
+                        <Text style={[styles.sectionTitle, styles.followingTitle]}>Following</Text>
+                    </View>
+                }
                 ListEmptyComponent={
-                    !isSearching && query ? (
-                        <Text style={styles.emptyText}>No results found.</Text>
+                    <Text style={styles.emptyText}>
+                        Follow some people to see their activity here.
+                    </Text>
+                }
+                renderItem={({ item }) => (
+                    <Touchable style={styles.row} onPress={() => goToFeedEntity(item)}>
+                        <View style={styles.iconWrap}>
+                            <Ionicons
+                                name={ACTIVITY_ICONS[item.activity_type]}
+                                size={16}
+                                color={activityIconColor(item.activity_type)}
+                            />
+                        </View>
+                        <View style={styles.rowText}>
+                            <Text style={styles.line}>
+                                <Text
+                                    style={styles.actor}
+                                    onPress={() => router.push(`/profile/${item.username}`)}
+                                >
+                                    {item.display_name ?? item.username}
+                                </Text>{" "}
+                                {describeActivity(item)}
+                            </Text>
+                            {item.body && (
+                                <Text style={styles.body} numberOfLines={2}>
+                                    {item.body}
+                                </Text>
+                            )}
+                            <Text style={styles.date}>
+                                {new Date(item.created_at).toLocaleDateString()}
+                            </Text>
+                        </View>
+                    </Touchable>
+                )}
+                ListFooterComponent={
+                    hasMore ? (
+                        <Touchable
+                            style={styles.loadMore}
+                            onPress={handleLoadMore}
+                            disabled={isLoadingMore}
+                        >
+                            {isLoadingMore ? (
+                                <ActivityIndicator color={colors.accent} />
+                            ) : (
+                                <Text style={styles.loadMoreText}>Load more</Text>
+                            )}
+                        </Touchable>
                     ) : null
                 }
             />
@@ -243,87 +346,195 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
-        padding: 16,
+        padding: spacing.md,
+    },
+    centered: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: colors.background,
     },
     header: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 16,
+        marginBottom: spacing.md,
+    },
+    brand: {
+        color: colors.text,
+        fontSize: 22,
+        fontFamily: fonts.displayBold,
     },
     headerLinks: {
         flexDirection: "row",
-        gap: 16,
+        gap: spacing.sm,
     },
-    username: {
-        color: colors.text,
-        fontWeight: "600",
-        fontSize: 16,
-    },
-    link: {
-        color: colors.accent,
-    },
-    input: {
+    headerIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
-        padding: 12,
-        backgroundColor: colors.surface,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    sectionTitle: {
         color: colors.text,
-        marginBottom: 12,
+        fontSize: 15,
+        fontFamily: fonts.displaySemiBold,
+        marginBottom: spacing.sm,
     },
-    tabs: {
-        flexDirection: "row",
-        gap: 8,
-        marginBottom: 12,
+    followingTitle: {
+        marginTop: spacing.xs,
     },
-    tab: {
-        paddingVertical: 6,
-        paddingHorizontal: 14,
-        borderRadius: 16,
-        backgroundColor: colors.surface,
-    },
-    tabActive: {
-        backgroundColor: colors.accent,
-    },
-    tabText: {
+    emptySectionText: {
         color: colors.textMuted,
+        fontSize: 13,
+        marginBottom: spacing.md,
+    },
+    popularAlbumsRow: {
+        marginBottom: spacing.md,
+    },
+    popularAlbumsContent: {
+        gap: spacing.sm,
+    },
+    albumCard: {
+        width: 100,
+        gap: 4,
+    },
+    albumCover: {
+        width: 100,
+        height: 100,
+        borderRadius: radius.sm,
+        backgroundColor: colors.surfaceRaised,
+    },
+    albumTitle: {
+        color: colors.text,
+        fontSize: 12,
         fontWeight: "600",
     },
-    tabTextActive: {
+    popularSection: {
+        marginBottom: spacing.sm,
+    },
+    popularCard: {
+        flexDirection: "row",
+        gap: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.sm,
+        marginBottom: spacing.sm,
+    },
+    popularCover: {
+        width: 52,
+        height: 52,
+        borderRadius: radius.sm,
+        backgroundColor: colors.surfaceRaised,
+    },
+    popularText: {
+        flex: 1,
+        gap: 2,
+    },
+    popularTitleRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.xs,
+    },
+    popularEntity: {
+        flex: 1,
+        color: colors.text,
+        fontWeight: "600",
+    },
+    popularAuthor: {
+        color: colors.textMuted,
+        fontSize: 12,
+    },
+    popularBody: {
+        color: colors.textMuted,
+        fontSize: 13,
+    },
+    popularLikeRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 3,
+        marginTop: 2,
+    },
+    popularLikeCount: {
+        color: colors.textMuted,
+        fontSize: 11,
+    },
+    scorePill: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 3,
+        backgroundColor: colors.ratingMuted,
+        borderRadius: radius.pill,
+        paddingVertical: 1,
+        paddingHorizontal: 6,
+    },
+    scorePillText: {
+        color: colors.text,
+        fontSize: 11,
+        fontWeight: "600",
+    },
+    row: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+        gap: spacing.sm,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginBottom: spacing.xs,
+    },
+    iconWrap: {
+        width: 32,
+        height: 32,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surfaceRaised,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: 2,
+    },
+    rowText: {
+        flex: 1,
+        gap: 2,
+    },
+    line: {
         color: colors.text,
     },
-    spinner: {
-        marginVertical: 12,
+    actor: {
+        color: colors.accent,
+        fontWeight: "600",
     },
-    error: {
-        color: colors.error,
-        marginBottom: 12,
+    body: {
+        color: colors.textMuted,
+        fontStyle: "italic",
+        fontSize: 13,
+    },
+    date: {
+        color: colors.textMuted,
+        fontSize: 12,
     },
     emptyText: {
         color: colors.textMuted,
         textAlign: "center",
-        marginTop: 24,
+        marginTop: spacing.lg,
     },
-    resultRow: {
-        flexDirection: "row",
+    error: {
+        color: colors.error,
+        marginBottom: spacing.md,
+    },
+    loadMore: {
+        paddingVertical: spacing.md,
         alignItems: "center",
-        paddingVertical: 8,
-        gap: 12,
     },
-    cover: {
-        width: 56,
-        height: 56,
-        borderRadius: 4,
-    },
-    resultText: {
-        flex: 1,
-    },
-    resultTitle: {
-        color: colors.text,
+    loadMoreText: {
+        color: colors.accent,
         fontWeight: "600",
-    },
-    resultArtist: {
-        color: colors.textMuted,
     },
 });

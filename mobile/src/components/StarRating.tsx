@@ -1,5 +1,9 @@
-import { View, Pressable, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../constants/theme";
+import { Touchable } from "./Touchable";
+
+const STAR_SIZE = 32;
 
 interface StarRatingProps {
     score: number | null; // 1-10 (half-star units), or null if unrated
@@ -7,15 +11,33 @@ interface StarRatingProps {
 }
 
 export function StarRating({ score, onRate }: StarRatingProps) {
-    const filledStars = score ? Math.round(score / 2) : 0;
-
     return (
         <View style={styles.row}>
-            {[1, 2, 3, 4, 5].map((star) => (
-                <Pressable key={star} onPress={() => onRate(star * 2)}>
-                    <Text style={[styles.star, star <= filledStars && styles.starFilled]}>★</Text>
-                </Pressable>
-            ))}
+            {[1, 2, 3, 4, 5].map((position) => {
+                const fullValue = position * 2;
+                const halfValue = fullValue - 1;
+
+                const iconName =
+                    !score || score < halfValue
+                        ? "star-outline"
+                        : score < fullValue
+                          ? "star-half"
+                          : "star";
+
+                return (
+                    <View key={position} style={styles.starWrapper}>
+                        <Ionicons
+                            name={iconName}
+                            size={STAR_SIZE}
+                            color={iconName === "star-outline" ? colors.border : colors.rating}
+                        />
+                        <View style={styles.hitZones}>
+                            <Touchable style={styles.halfHit} onPress={() => onRate(halfValue)} />
+                            <Touchable style={styles.halfHit} onPress={() => onRate(fullValue)} />
+                        </View>
+                    </View>
+                );
+            })}
         </View>
     );
 }
@@ -25,11 +47,19 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         gap: 4,
     },
-    star: {
-        fontSize: 32,
-        color: colors.border,
+    starWrapper: {
+        width: STAR_SIZE,
+        height: STAR_SIZE,
     },
-    starFilled: {
-        color: colors.accent,
+    hitZones: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        flexDirection: "row",
+    },
+    halfHit: {
+        flex: 1,
     },
 });

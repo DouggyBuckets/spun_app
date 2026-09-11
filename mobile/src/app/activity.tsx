@@ -1,17 +1,12 @@
 import { useCallback, useState } from "react";
-import {
-    View,
-    Text,
-    Image,
-    FlatList,
-    Pressable,
-    StyleSheet,
-    ActivityIndicator,
-} from "react-native";
+import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator } from "react-native";
 import { Redirect, useFocusEffect, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { apiFetch, ApiError } from "../api/client";
-import { colors } from "../constants/theme";
+import { colors, spacing, radius } from "../constants/theme";
+import { Touchable } from "../components/Touchable";
+import { BackButton } from "../components/BackButton";
 
 const LIMIT = 20;
 
@@ -156,34 +151,42 @@ export default function ActivityScreen() {
 
     const loadMoreFooter = (hasMore: boolean) =>
         hasMore ? (
-            <Pressable style={styles.loadMore} onPress={handleLoadMore} disabled={isLoadingMore}>
+            <Touchable style={styles.loadMore} onPress={handleLoadMore} disabled={isLoadingMore}>
                 {isLoadingMore ? (
                     <ActivityIndicator color={colors.accent} />
                 ) : (
                     <Text style={styles.loadMoreText}>Load more</Text>
                 )}
-            </Pressable>
+            </Touchable>
         ) : null;
 
     return (
         <View style={styles.container}>
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
             <View style={styles.tabs}>
                 {(
                     [
-                        { key: "listenLater", label: "Listen Later" },
-                        { key: "spins", label: "Logged" },
-                        { key: "reviews", label: "Reviews" },
-                    ] as { key: Tab; label: string }[]
-                ).map(({ key, label }) => (
-                    <Pressable
+                        { key: "listenLater", label: "Listen Later", icon: "bookmark-outline" },
+                        { key: "spins", label: "Logged", icon: "play-circle-outline" },
+                        { key: "reviews", label: "Reviews", icon: "create-outline" },
+                    ] as { key: Tab; label: string; icon: keyof typeof Ionicons.glyphMap }[]
+                ).map(({ key, label, icon }) => (
+                    <Touchable
                         key={key}
                         style={[styles.tab, activeTab === key && styles.tabActive]}
                         onPress={() => setActiveTab(key)}
                     >
+                        <Ionicons
+                            name={icon}
+                            size={14}
+                            color={activeTab === key ? colors.text : colors.textMuted}
+                        />
                         <Text style={[styles.tabText, activeTab === key && styles.tabTextActive]}>
                             {label}
                         </Text>
-                    </Pressable>
+                    </Touchable>
                 ))}
             </View>
 
@@ -198,18 +201,17 @@ export default function ActivityScreen() {
                         <Text style={styles.emptyText}>Your Listen Later queue is empty.</Text>
                     }
                     renderItem={({ item }) => (
-                        <Pressable style={styles.row} onPress={() => goToEntity(item)}>
-                            {item.cover_url && (
+                        <Touchable style={styles.row} onPress={() => goToEntity(item)}>
+                            {item.cover_url ? (
                                 <Image source={{ uri: item.cover_url }} style={styles.cover} />
+                            ) : (
+                                <View style={styles.cover} />
                             )}
                             <Text style={styles.rowTitle}>{item.entity_name ?? "Unknown"}</Text>
-                            <Pressable
-                                onPress={() => handleRemoveListenLater(item)}
-                                hitSlop={8}
-                            >
-                                <Text style={styles.remove}>✕</Text>
-                            </Pressable>
-                        </Pressable>
+                            <Touchable onPress={() => handleRemoveListenLater(item)} hitSlop={8}>
+                                <Ionicons name="close" size={18} color={colors.textMuted} />
+                            </Touchable>
+                        </Touchable>
                     )}
                 />
             )}
@@ -222,9 +224,11 @@ export default function ActivityScreen() {
                         <Text style={styles.emptyText}>Nothing logged yet.</Text>
                     }
                     renderItem={({ item }) => (
-                        <Pressable style={styles.row} onPress={() => goToEntity(item)}>
-                            {item.cover_url && (
+                        <Touchable style={styles.row} onPress={() => goToEntity(item)}>
+                            {item.cover_url ? (
                                 <Image source={{ uri: item.cover_url }} style={styles.cover} />
+                            ) : (
+                                <View style={styles.cover} />
                             )}
                             <View style={styles.rowText}>
                                 <Text style={styles.rowTitle}>{item.entity_name ?? "Unknown"}</Text>
@@ -232,7 +236,7 @@ export default function ActivityScreen() {
                                     {new Date(item.listened_on).toLocaleDateString()}
                                 </Text>
                             </View>
-                        </Pressable>
+                        </Touchable>
                     )}
                     ListFooterComponent={loadMoreFooter(spinHasMore)}
                 />
@@ -244,20 +248,27 @@ export default function ActivityScreen() {
                     keyExtractor={(item) => String(item.id)}
                     ListEmptyComponent={<Text style={styles.emptyText}>No reviews yet.</Text>}
                     renderItem={({ item }) => (
-                        <Pressable style={styles.row} onPress={() => goToEntity(item)}>
-                            {item.cover_url && (
+                        <Touchable style={styles.row} onPress={() => goToEntity(item)}>
+                            {item.cover_url ? (
                                 <Image source={{ uri: item.cover_url }} style={styles.cover} />
+                            ) : (
+                                <View style={styles.cover} />
                             )}
                             <View style={styles.rowText}>
-                                <Text style={styles.rowTitle}>{item.entity_name ?? "Unknown"}</Text>
-                                {item.score !== null && (
-                                    <Text style={styles.rowMeta}>Rated {item.score / 2}/5</Text>
-                                )}
+                                <View style={styles.rowTitleLine}>
+                                    <Text style={styles.rowTitle}>{item.entity_name ?? "Unknown"}</Text>
+                                    {item.score !== null && (
+                                        <View style={styles.scorePill}>
+                                            <Ionicons name="star" size={10} color={colors.rating} />
+                                            <Text style={styles.scorePillText}>{item.score / 2}/5</Text>
+                                        </View>
+                                    )}
+                                </View>
                                 <Text style={styles.rowBody} numberOfLines={2}>
                                     {item.body}
                                 </Text>
                             </View>
-                        </Pressable>
+                        </Touchable>
                     )}
                     ListFooterComponent={loadMoreFooter(reviewHasMore)}
                 />
@@ -270,56 +281,76 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
-        padding: 16,
+        padding: spacing.md,
+    },
+    topBar: {
+        marginBottom: spacing.sm,
     },
     tabs: {
         flexDirection: "row",
-        gap: 8,
-        marginBottom: 12,
+        gap: spacing.sm,
+        marginBottom: spacing.md,
     },
     tab: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
         paddingVertical: 6,
-        paddingHorizontal: 14,
-        borderRadius: 16,
+        paddingHorizontal: spacing.sm,
+        borderRadius: radius.pill,
         backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     tabActive: {
         backgroundColor: colors.accent,
+        borderColor: colors.accent,
     },
     tabText: {
         color: colors.textMuted,
         fontWeight: "600",
+        fontSize: 13,
     },
     tabTextActive: {
         color: colors.text,
     },
     spinner: {
-        marginVertical: 12,
+        marginVertical: spacing.md,
     },
     error: {
         color: colors.error,
-        marginBottom: 12,
+        marginBottom: spacing.md,
     },
     emptyText: {
         color: colors.textMuted,
         textAlign: "center",
-        marginTop: 24,
+        marginTop: spacing.lg,
     },
     row: {
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 10,
-        gap: 12,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: colors.border,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        gap: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginBottom: spacing.xs,
     },
     cover: {
         width: 48,
         height: 48,
-        borderRadius: 4,
+        borderRadius: radius.sm,
+        backgroundColor: colors.surfaceRaised,
     },
     rowText: {
         flex: 1,
+    },
+    rowTitleLine: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.xs,
     },
     rowTitle: {
         flex: 1,
@@ -336,12 +367,22 @@ const styles = StyleSheet.create({
         fontSize: 13,
         marginTop: 4,
     },
-    remove: {
-        color: colors.textMuted,
-        padding: 4,
+    scorePill: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 3,
+        backgroundColor: colors.ratingMuted,
+        borderRadius: radius.pill,
+        paddingVertical: 1,
+        paddingHorizontal: 6,
+    },
+    scorePillText: {
+        color: colors.text,
+        fontSize: 11,
+        fontWeight: "600",
     },
     loadMore: {
-        paddingVertical: 16,
+        paddingVertical: spacing.md,
         alignItems: "center",
     },
     loadMoreText: {

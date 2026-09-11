@@ -4,16 +4,18 @@ import {
     Text,
     Image,
     FlatList,
-    Pressable,
     TextInput,
     Switch,
     StyleSheet,
     ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../context/AuthContext";
 import { apiFetch, ApiError } from "../../api/client";
-import { colors } from "../../constants/theme";
+import { colors, spacing, radius, fonts } from "../../constants/theme";
+import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 interface ListItem {
     id: number;
@@ -164,6 +166,9 @@ export default function ListDetailScreen() {
             keyExtractor={(item) => item.spotify_id}
             ListHeaderComponent={
                 <View style={styles.header}>
+                    <View style={styles.topBar}>
+                        <BackButton />
+                    </View>
                     {!isEditing ? (
                         <>
                             <Text style={styles.title}>{list.title}</Text>
@@ -175,7 +180,7 @@ export default function ListDetailScreen() {
                             </Text>
                         </>
                     ) : (
-                        <View style={styles.form}>
+                        <View style={styles.formCard}>
                             <TextInput
                                 style={styles.input}
                                 placeholder="Title"
@@ -203,10 +208,10 @@ export default function ListDetailScreen() {
                             </View>
                             {saveError && <Text style={styles.error}>{saveError}</Text>}
                             <View style={styles.formButtons}>
-                                <Pressable onPress={() => setIsEditing(false)}>
+                                <Touchable onPress={() => setIsEditing(false)}>
                                     <Text style={styles.actionLink}>Cancel</Text>
-                                </Pressable>
-                                <Pressable
+                                </Touchable>
+                                <Touchable
                                     style={styles.button}
                                     onPress={handleSave}
                                     disabled={isSaving}
@@ -214,78 +219,71 @@ export default function ListDetailScreen() {
                                     <Text style={styles.buttonText}>
                                         {isSaving ? "Saving..." : "Save"}
                                     </Text>
-                                </Pressable>
+                                </Touchable>
                             </View>
                         </View>
                     )}
 
                     {isOwner && !isEditing && (
                         <View style={styles.ownerActions}>
-                            <Pressable onPress={() => setIsEditing(true)}>
-                                <Text style={styles.actionLink}>Edit</Text>
-                            </Pressable>
-                            <Pressable
+                            <Touchable style={styles.ownerButton} onPress={() => setIsEditing(true)}>
+                                <Ionicons name="create-outline" size={18} color={colors.accent} />
+                            </Touchable>
+                            <Touchable
+                                style={styles.ownerButton}
                                 onPress={() =>
                                     router.push({ pathname: "/lists/add-album", params: { id } })
                                 }
                             >
-                                <Text style={styles.actionLink}>Add album</Text>
-                            </Pressable>
-                            <Pressable onPress={handleDelete}>
-                                <Text style={[styles.actionLink, styles.deleteLink]}>Delete</Text>
-                            </Pressable>
+                                <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
+                            </Touchable>
+                            <Touchable style={styles.ownerButton} onPress={handleDelete}>
+                                <Ionicons name="trash-outline" size={18} color={colors.error} />
+                            </Touchable>
                         </View>
                     )}
                 </View>
             }
             renderItem={({ item, index }) => (
-                <Pressable
+                <Touchable
                     style={styles.itemRow}
                     onPress={() => router.push(`/album/${item.spotify_id}`)}
                 >
                     {list.is_ranked && <Text style={styles.itemPosition}>{index + 1}</Text>}
-                    {item.cover_url && (
+                    {item.cover_url ? (
                         <Image source={{ uri: item.cover_url }} style={styles.itemCover} />
+                    ) : (
+                        <View style={styles.itemCover} />
                     )}
                     <Text style={styles.itemTitle}>{item.title}</Text>
                     {isOwner && list.is_ranked && (
                         <View style={styles.moveButtons}>
-                            <Pressable
-                                onPress={() => handleMove(index, -1)}
-                                disabled={index === 0}
-                                hitSlop={8}
-                            >
-                                <Text
-                                    style={[styles.moveButton, index === 0 && styles.moveButtonDisabled]}
-                                >
-                                    ▲
-                                </Text>
-                            </Pressable>
-                            <Pressable
+                            <Touchable onPress={() => handleMove(index, -1)} disabled={index === 0} hitSlop={8}>
+                                <Ionicons
+                                    name="chevron-up"
+                                    size={16}
+                                    color={index === 0 ? colors.border : colors.accent}
+                                />
+                            </Touchable>
+                            <Touchable
                                 onPress={() => handleMove(index, 1)}
                                 disabled={index === list.items.length - 1}
                                 hitSlop={8}
                             >
-                                <Text
-                                    style={[
-                                        styles.moveButton,
-                                        index === list.items.length - 1 && styles.moveButtonDisabled,
-                                    ]}
-                                >
-                                    ▼
-                                </Text>
-                            </Pressable>
+                                <Ionicons
+                                    name="chevron-down"
+                                    size={16}
+                                    color={index === list.items.length - 1 ? colors.border : colors.accent}
+                                />
+                            </Touchable>
                         </View>
                     )}
                     {isOwner && (
-                        <Pressable
-                            onPress={() => handleRemoveItem(item.spotify_id)}
-                            hitSlop={8}
-                        >
-                            <Text style={styles.itemRemove}>✕</Text>
-                        </Pressable>
+                        <Touchable onPress={() => handleRemoveItem(item.spotify_id)} hitSlop={8}>
+                            <Ionicons name="close" size={18} color={colors.textMuted} />
+                        </Touchable>
                     )}
-                </Pressable>
+                </Touchable>
             )}
             ListEmptyComponent={<Text style={styles.emptyText}>No albums in this list yet.</Text>}
         />
@@ -304,13 +302,16 @@ const styles = StyleSheet.create({
         backgroundColor: colors.background,
     },
     header: {
-        padding: 24,
-        gap: 6,
+        padding: spacing.lg,
+        gap: spacing.xs,
+    },
+    topBar: {
+        marginBottom: spacing.xs,
     },
     title: {
         color: colors.text,
         fontSize: 22,
-        fontWeight: "700",
+        fontFamily: fonts.displayBold,
     },
     description: {
         color: colors.text,
@@ -320,23 +321,28 @@ const styles = StyleSheet.create({
         color: colors.textMuted,
         fontSize: 13,
     },
-    form: {
-        gap: 8,
+    formCard: {
+        gap: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.md,
     },
     input: {
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
+        borderRadius: radius.sm,
         padding: 10,
-        backgroundColor: colors.surface,
+        backgroundColor: colors.surfaceRaised,
         color: colors.text,
     },
     textArea: {
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
+        borderRadius: radius.sm,
         padding: 10,
-        backgroundColor: colors.surface,
+        backgroundColor: colors.surfaceRaised,
         color: colors.text,
         minHeight: 60,
         textAlignVertical: "top",
@@ -353,13 +359,13 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "flex-end",
         alignItems: "center",
-        gap: 16,
+        gap: spacing.md,
     },
     button: {
         backgroundColor: colors.accent,
-        borderRadius: 8,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
+        borderRadius: radius.sm,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
     },
     buttonText: {
         color: colors.text,
@@ -367,21 +373,31 @@ const styles = StyleSheet.create({
     },
     actionLink: {
         color: colors.accent,
-    },
-    deleteLink: {
-        color: colors.error,
+        fontWeight: "600",
     },
     ownerActions: {
         flexDirection: "row",
-        gap: 20,
-        marginTop: 8,
+        gap: spacing.sm,
+        marginTop: spacing.sm,
+    },
+    ownerButton: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        justifyContent: "center",
+        alignItems: "center",
     },
     itemRow: {
         flexDirection: "row",
         alignItems: "center",
-        paddingVertical: 8,
-        paddingHorizontal: 24,
-        gap: 12,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        gap: spacing.sm,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: colors.border,
     },
     itemPosition: {
         color: colors.textMuted,
@@ -391,32 +407,20 @@ const styles = StyleSheet.create({
     itemCover: {
         width: 48,
         height: 48,
-        borderRadius: 4,
+        borderRadius: radius.sm,
+        backgroundColor: colors.surfaceRaised,
     },
     itemTitle: {
         flex: 1,
         color: colors.text,
     },
-    itemRemove: {
-        color: colors.textMuted,
-        padding: 4,
-    },
     moveButtons: {
         gap: 2,
-    },
-    moveButton: {
-        color: colors.accent,
-        fontSize: 12,
-        textAlign: "center",
-        padding: 2,
-    },
-    moveButtonDisabled: {
-        color: colors.border,
     },
     emptyText: {
         color: colors.textMuted,
         textAlign: "center",
-        marginTop: 24,
+        marginTop: spacing.lg,
     },
     error: {
         color: colors.error,

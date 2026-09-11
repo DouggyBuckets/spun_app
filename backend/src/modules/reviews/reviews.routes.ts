@@ -25,6 +25,41 @@ const paginationSchema = z.object({
     offset: z.coerce.number().int().min(0).default(0),
 });
 
+const popularSchema = z.object({
+    limit: z.coerce.number().int().min(1).max(50).default(10),
+});
+
+// Registered before "/:username" — Express matches path shape by registration
+// order, and "/popular" would otherwise be swallowed by the username param.
+router.get("/popular", requireAuth, async (req, res) => {
+    const { limit } = popularSchema.parse(req.query);
+
+    const result = await db.query(
+        `SELECT r.id, r.entity_type, r.body, r.created_at, ra.score,
+            u.username, u.display_name, u.avatar_url,
+            COALESCE(al.title, so.title) AS entity_name,
+            COALESCE(al.cover_url, songAlbum.cover_url) AS cover_url,
+            COALESCE(al.external_id, so.external_id) AS spotify_id,
+            songAlbum.external_id AS album_spotify_id,
+            COUNT(rl.id)::int AS like_count,
+            COALESCE(BOOL_OR(rl.user_id = $1), false) AS liked_by_me
+        FROM reviews r
+        JOIN users u ON u.id = r.user_id
+        LEFT JOIN albums al ON al.id = r.entity_id AND r.entity_type = 'album'
+        LEFT JOIN songs so ON so.id = r.entity_id AND r.entity_type = 'song'
+        LEFT JOIN albums songAlbum ON songAlbum.id = so.album_id
+        LEFT JOIN ratings ra ON ra.id = r.rating_id
+        LEFT JOIN review_likes rl ON rl.review_id = r.id
+        GROUP BY r.id, ra.score, u.username, u.display_name, u.avatar_url,
+            al.title, so.title, al.cover_url, songAlbum.cover_url,
+            al.external_id, so.external_id, songAlbum.external_id
+        ORDER BY like_count DESC, r.created_at DESC
+        LIMIT $2`,
+        [req.user!.id, limit]
+    );
+    res.json(result.rows);
+});
+
 router.get("/:username", async (req, res) => {
     const { limit, offset } = paginationSchema.parse(req.query);
 

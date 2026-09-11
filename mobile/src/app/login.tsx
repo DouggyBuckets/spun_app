@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { View, TextInput, Pressable, Text, StyleSheet } from "react-native";
+import { View, TextInput, Text, StyleSheet } from "react-native";
 import { Redirect, Link } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { ApiError } from "../api/client";
-import { colors } from "../constants/theme";
+import { colors, spacing, radius, fonts } from "../constants/theme";
+import { Touchable } from "../components/Touchable";
 
 export default function LoginScreen() {
     const { login, user } = useAuth();
@@ -34,27 +36,36 @@ export default function LoginScreen() {
 
     return (
         <View style={styles.container}>
-            <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor={colors.textMuted}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor={colors.textMuted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-            />
+            <Text style={styles.brand}>Spun</Text>
+            <Text style={styles.tagline}>Track the music you love.</Text>
+
+            <View style={styles.inputRow}>
+                <Ionicons name="mail-outline" size={18} color={colors.textMuted} />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Email"
+                    placeholderTextColor={colors.textMuted}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                />
+            </View>
+            <View style={styles.inputRow}>
+                <Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Password"
+                    placeholderTextColor={colors.textMuted}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                />
+            </View>
             {error && <Text style={styles.error}>{error}</Text>}
-            <Pressable style={styles.button} onPress={handleSubmit} disabled={isSubmitting}>
+            <Touchable style={styles.button} onPress={handleSubmit} disabled={isSubmitting}>
                 <Text style={styles.buttonText}>{isSubmitting ? "Logging in..." : "Log In"}</Text>
-            </Pressable>
+            </Touchable>
             <Link href="/register">
                 <Text style={styles.link}>Don't have an account? Sign up</Text>
             </Link>
@@ -66,23 +77,43 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: "center",
-        padding: 24,
-        gap: 12,
+        padding: spacing.lg,
+        gap: spacing.sm,
         backgroundColor: colors.background,
     },
-    input: {
+    brand: {
+        color: colors.text,
+        fontSize: 34,
+        fontFamily: fonts.displayBold,
+        textAlign: "center",
+        marginBottom: 2,
+    },
+    tagline: {
+        color: colors.textMuted,
+        textAlign: "center",
+        marginBottom: spacing.lg,
+    },
+    inputRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
-        padding: 12,
+        borderRadius: radius.md,
+        paddingHorizontal: spacing.sm,
         backgroundColor: colors.surface,
+    },
+    input: {
+        flex: 1,
+        paddingVertical: 12,
         color: colors.text,
     },
     button: {
         backgroundColor: colors.accent,
-        borderRadius: 8,
+        borderRadius: radius.md,
         padding: 14,
         alignItems: "center",
+        marginTop: spacing.xs,
     },
     buttonText: {
         color: colors.text,
@@ -94,6 +125,6 @@ const styles = StyleSheet.create({
     link: {
         color: colors.accent,
         textAlign: "center",
-        marginTop: 8,
+        marginTop: spacing.sm,
     },
 });

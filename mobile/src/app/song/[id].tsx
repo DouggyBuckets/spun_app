@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react";
-import { View, Text, Image, Pressable, TextInput, ScrollView, StyleSheet } from "react-native";
+import {
+    View,
+    Text,
+    Image,
+    TextInput,
+    ScrollView,
+    StyleSheet,
+    ActivityIndicator,
+    Modal,
+} from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { apiFetch, ApiError } from "../../api/client";
-import { colors } from "../../constants/theme";
+import { colors, spacing, radius, cardShadow, fonts } from "../../constants/theme";
 import { StarRating } from "../../components/StarRating";
 import { useToggle } from "../../hooks/useToggle";
+import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 interface RatingResponse {
     score: number | null;
@@ -40,6 +51,8 @@ export default function SongDetailScreen() {
     const [ratingCount, setRatingCount] = useState(0);
     const [reviews, setReviews] = useState<SongReview[]>([]);
     const [ratingError, setRatingError] = useState<string | null>(null);
+    const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const like = useToggle(`/likes/songs/${id}`, "liked", { albumSpotifyId: albumId });
     const listenLater = useToggle(`/listen-later/songs/${id}`, "inQueue", { albumSpotifyId: albumId });
@@ -112,6 +125,7 @@ export default function SongDetailScreen() {
         setRatingError(null);
         const previous = myRating;
         setMyRating(score);
+        setIsRatingModalOpen(false);
         try {
             await apiFetch(`/ratings/songs/${id}`, {
                 method: "POST",
@@ -186,55 +200,133 @@ export default function SongDetailScreen() {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
             {imageUrl && <Image source={{ uri: imageUrl }} style={styles.cover} />}
             <Text style={styles.title}>{name}</Text>
             <Text style={styles.artist}>{artistNames}</Text>
-            <Pressable onPress={() => router.push(`/album/${albumId}`)}>
+            <Touchable onPress={() => router.push(`/album/${albumId}`)}>
                 <Text style={styles.albumLink}>from {albumName}</Text>
-            </Pressable>
+            </Touchable>
 
-            <StarRating score={myRating} onRate={handleRate} />
-            {ratingCount > 0 && (
-                <Text style={styles.averageRating}>
-                    {averageScore !== null ? (averageScore / 2).toFixed(1) : "—"}/5 average ·{" "}
-                    {ratingCount} {ratingCount === 1 ? "rating" : "ratings"}
-                </Text>
-            )}
+            <View style={styles.statsCard}>
+                <View style={styles.statColumn}>
+                    <Text style={styles.statNumber}>{ratingCount}</Text>
+                    <Text style={styles.statLabel}>{ratingCount === 1 ? "Rating" : "Ratings"}</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statColumn}>
+                    <View style={styles.statValueRow}>
+                        {averageScore !== null && (
+                            <Ionicons name="star" size={13} color={colors.rating} />
+                        )}
+                        <Text style={styles.statNumber}>
+                            {averageScore !== null ? (averageScore / 2).toFixed(1) : "—"}
+                        </Text>
+                    </View>
+                    <Text style={styles.statLabel}>Average</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <Touchable style={styles.statColumn} onPress={() => setIsRatingModalOpen(true)}>
+                    <View
+                        style={[styles.statValueRow, myRating !== null && styles.yourRatingPill]}
+                    >
+                        {myRating !== null && <Ionicons name="star" size={13} color={colors.rating} />}
+                        <Text style={[styles.statNumber, myRating === null && styles.statNumberMuted]}>
+                            {myRating !== null ? (myRating / 2).toFixed(1) : "Rate"}
+                        </Text>
+                    </View>
+                    <Text style={styles.statLabel}>Your Rating</Text>
+                </Touchable>
+            </View>
             {ratingError && <Text style={styles.error}>{ratingError}</Text>}
 
             <View style={styles.actionRow}>
-                <Pressable onPress={like.toggle} disabled={like.isLoading}>
+                <Touchable style={styles.actionButton} onPress={like.toggle} disabled={like.isLoading}>
                     <Ionicons
                         name={like.isOn ? "heart" : "heart-outline"}
-                        size={26}
-                        color={like.isOn ? colors.accent : colors.textMuted}
+                        size={22}
+                        color={colors.like}
                     />
-                </Pressable>
-                <Pressable onPress={listenLater.toggle} disabled={listenLater.isLoading}>
+                </Touchable>
+                <Touchable
+                    style={styles.actionButton}
+                    onPress={listenLater.toggle}
+                    disabled={listenLater.isLoading}
+                >
                     <Ionicons
                         name={listenLater.isOn ? "bookmark" : "bookmark-outline"}
-                        size={26}
-                        color={listenLater.isOn ? colors.accent : colors.textMuted}
+                        size={22}
+                        color={colors.accent}
                     />
-                </Pressable>
-                <Pressable onPress={handleLog} disabled={isLogging}>
-                    <Text style={styles.actionLink}>
-                        {isLogging ? "Logging..." : justLogged ? "Logged ✓" : "Log listen"}
-                    </Text>
-                </Pressable>
+                </Touchable>
+                <Touchable style={styles.actionButton} onPress={() => setIsReviewOpen((v) => !v)}>
+                    <Ionicons name="create-outline" size={22} color={colors.accent} />
+                </Touchable>
+                <Touchable style={styles.actionButton} onPress={() => setIsMenuOpen(true)}>
+                    <Ionicons name="ellipsis-horizontal" size={22} color={colors.textMuted} />
+                </Touchable>
             </View>
+            {justLogged && <Text style={styles.confirmText}>Logged ✓</Text>}
             {(like.error || listenLater.error || logError) && (
                 <Text style={styles.error}>{like.error || listenLater.error || logError}</Text>
             )}
 
-            {!isReviewOpen ? (
-                <Pressable onPress={() => setIsReviewOpen(true)}>
-                    <Text style={styles.actionLink}>
-                        {reviewSubmitted ? "Review posted ✓ — write another" : "Write a review"}
-                    </Text>
-                </Pressable>
-            ) : (
-                <View style={styles.form}>
+            <Modal
+                visible={isRatingModalOpen}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setIsRatingModalOpen(false)}
+            >
+                <Touchable
+                    style={styles.ratingModalBackdrop}
+                    onPress={() => setIsRatingModalOpen(false)}
+                />
+                <View style={styles.ratingModalCenter} pointerEvents="box-none">
+                    <View style={styles.ratingModalCard}>
+                        <Text style={styles.ratingModalTitle}>Rate this Song</Text>
+                        <StarRating score={myRating} onRate={handleRate} />
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                visible={isMenuOpen}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setIsMenuOpen(false)}
+            >
+                <Touchable style={styles.menuBackdrop} onPress={() => setIsMenuOpen(false)} />
+                <View style={styles.menuSheet}>
+                    <Touchable
+                        style={styles.menuRow}
+                        onPress={() => {
+                            setIsMenuOpen(false);
+                            handleLog();
+                        }}
+                        disabled={isLogging}
+                    >
+                        <Ionicons name="add-circle-outline" size={20} color={colors.text} />
+                        <Text style={styles.menuRowText}>{isLogging ? "Logging..." : "Log listen"}</Text>
+                    </Touchable>
+                    <Touchable
+                        style={styles.menuRow}
+                        onPress={() => {
+                            setIsMenuOpen(false);
+                            setIsRecommendOpen(true);
+                        }}
+                    >
+                        <Ionicons name="paper-plane-outline" size={20} color={colors.text} />
+                        <Text style={styles.menuRowText}>
+                            {recommendSent ? "Recommend to someone else" : "Recommend to a friend"}
+                        </Text>
+                    </Touchable>
+                </View>
+            </Modal>
+
+            {isReviewOpen && (
+                <View style={styles.formCard}>
                     <TextInput
                         style={styles.textArea}
                         placeholder="Write your review..."
@@ -245,10 +337,10 @@ export default function SongDetailScreen() {
                     />
                     {reviewError && <Text style={styles.error}>{reviewError}</Text>}
                     <View style={styles.formButtons}>
-                        <Pressable onPress={() => setIsReviewOpen(false)}>
+                        <Touchable onPress={() => setIsReviewOpen(false)}>
                             <Text style={styles.actionLink}>Cancel</Text>
-                        </Pressable>
-                        <Pressable
+                        </Touchable>
+                        <Touchable
                             style={styles.button}
                             onPress={handleSubmitReview}
                             disabled={isSubmittingReview}
@@ -256,53 +348,13 @@ export default function SongDetailScreen() {
                             <Text style={styles.buttonText}>
                                 {isSubmittingReview ? "Posting..." : "Post"}
                             </Text>
-                        </Pressable>
+                        </Touchable>
                     </View>
                 </View>
             )}
 
-            {reviews.length > 0 && (
-                <View style={styles.reviewsSection}>
-                    <Text style={styles.sectionTitle}>Reviews</Text>
-                    {reviews.map((review) => (
-                        <View key={review.id} style={styles.reviewCard}>
-                            <View style={styles.reviewHeader}>
-                                <Pressable onPress={() => router.push(`/profile/${review.username}`)}>
-                                    <Text style={styles.reviewAuthor}>
-                                        {review.display_name ?? review.username}
-                                    </Text>
-                                </Pressable>
-                                {review.score !== null && (
-                                    <Text style={styles.reviewScore}>{review.score / 2}/5</Text>
-                                )}
-                            </View>
-                            <Text style={styles.reviewBody}>{review.body}</Text>
-                            <Pressable
-                                style={styles.reviewLikeRow}
-                                onPress={() => handleToggleReviewLike(review)}
-                            >
-                                <Ionicons
-                                    name={review.liked_by_me ? "heart" : "heart-outline"}
-                                    size={16}
-                                    color={review.liked_by_me ? colors.accent : colors.textMuted}
-                                />
-                                {review.like_count > 0 && (
-                                    <Text style={styles.reviewLikeCount}>{review.like_count}</Text>
-                                )}
-                            </Pressable>
-                        </View>
-                    ))}
-                </View>
-            )}
-
-            {!isRecommendOpen ? (
-                <Pressable onPress={() => setIsRecommendOpen(true)}>
-                    <Text style={styles.actionLink}>
-                        {recommendSent ? "Sent ✓ — recommend to someone else" : "Recommend to a friend"}
-                    </Text>
-                </Pressable>
-            ) : (
-                <View style={styles.form}>
+            {isRecommendOpen && (
+                <View style={styles.formCard}>
                     <TextInput
                         style={styles.input}
                         placeholder="Their username"
@@ -320,10 +372,10 @@ export default function SongDetailScreen() {
                     />
                     {recommendError && <Text style={styles.error}>{recommendError}</Text>}
                     <View style={styles.formButtons}>
-                        <Pressable onPress={() => setIsRecommendOpen(false)}>
+                        <Touchable onPress={() => setIsRecommendOpen(false)}>
                             <Text style={styles.actionLink}>Cancel</Text>
-                        </Pressable>
-                        <Pressable
+                        </Touchable>
+                        <Touchable
                             style={styles.button}
                             onPress={handleSendRecommendation}
                             disabled={isSendingRecommendation}
@@ -331,8 +383,45 @@ export default function SongDetailScreen() {
                             <Text style={styles.buttonText}>
                                 {isSendingRecommendation ? "Sending..." : "Send"}
                             </Text>
-                        </Pressable>
+                        </Touchable>
                     </View>
+                </View>
+            )}
+
+            {reviews.length > 0 && (
+                <View style={styles.reviewsSection}>
+                    <Text style={styles.sectionTitle}>Reviews</Text>
+                    {reviews.map((review) => (
+                        <View key={review.id} style={styles.reviewCard}>
+                            <View style={styles.reviewHeader}>
+                                <Touchable onPress={() => router.push(`/profile/${review.username}`)}>
+                                    <Text style={styles.reviewAuthor}>
+                                        {review.display_name ?? review.username}
+                                    </Text>
+                                </Touchable>
+                                {review.score !== null && (
+                                    <View style={styles.reviewScorePill}>
+                                        <Ionicons name="star" size={11} color={colors.rating} />
+                                        <Text style={styles.reviewScore}>{review.score / 2}/5</Text>
+                                    </View>
+                                )}
+                            </View>
+                            <Text style={styles.reviewBody}>{review.body}</Text>
+                            <Touchable
+                                style={styles.reviewLikeRow}
+                                onPress={() => handleToggleReviewLike(review)}
+                            >
+                                <Ionicons
+                                    name={review.liked_by_me ? "heart" : "heart-outline"}
+                                    size={16}
+                                    color={review.liked_by_me ? colors.like : colors.textMuted}
+                                />
+                                {review.like_count > 0 && (
+                                    <Text style={styles.reviewLikeCount}>{review.like_count}</Text>
+                                )}
+                            </Touchable>
+                        </View>
+                    ))}
                 </View>
             )}
         </ScrollView>
@@ -346,62 +435,189 @@ const styles = StyleSheet.create({
     },
     content: {
         alignItems: "center",
-        padding: 24,
-        gap: 10,
+        padding: spacing.lg,
+        gap: spacing.sm,
+    },
+    topBar: {
+        width: "100%",
+        alignItems: "flex-start",
+        marginBottom: spacing.xs,
     },
     cover: {
-        width: 200,
-        height: 200,
-        borderRadius: 8,
-        marginBottom: 12,
+        width: 220,
+        height: 220,
+        borderRadius: radius.md,
+        marginBottom: spacing.sm,
+        ...cardShadow,
     },
     title: {
         color: colors.text,
-        fontSize: 20,
-        fontWeight: "700",
+        fontSize: 22,
+        fontFamily: fonts.displayBold,
         textAlign: "center",
+        letterSpacing: 0.2,
     },
     artist: {
         color: colors.textMuted,
         fontSize: 16,
+        fontWeight: "500",
     },
     albumLink: {
         color: colors.accent,
         fontSize: 13,
+        fontWeight: "600",
+    },
+    statsCard: {
+        flexDirection: "row",
+        width: "100%",
+        alignItems: "center",
+        backgroundColor: colors.surface,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        paddingVertical: spacing.md,
+        marginTop: spacing.sm,
+    },
+    statColumn: {
+        flex: 1,
+        alignItems: "center",
+        gap: 2,
+    },
+    statDivider: {
+        width: StyleSheet.hairlineWidth,
+        alignSelf: "stretch",
+        backgroundColor: colors.border,
+    },
+    statValueRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+    },
+    statNumber: {
+        color: colors.text,
+        fontSize: 18,
+        fontWeight: "700",
+    },
+    statNumberMuted: {
+        color: colors.textMuted,
+        fontSize: 15,
+        fontWeight: "500",
+    },
+    statLabel: {
+        color: colors.textMuted,
+        fontSize: 11,
+    },
+    yourRatingPill: {
+        backgroundColor: colors.ratingMuted,
+        borderRadius: radius.pill,
+        paddingVertical: 3,
+        paddingHorizontal: spacing.sm,
     },
     actionRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 20,
-        marginTop: 4,
+        justifyContent: "center",
+        gap: spacing.md,
+        marginTop: spacing.sm,
+    },
+    actionButton: {
+        width: 48,
+        height: 48,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    confirmText: {
+        color: colors.accent,
+        fontSize: 12,
+    },
+    ratingModalBackdrop: {
+        flex: 1,
+        backgroundColor: "#00000099",
+    },
+    ratingModalCenter: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: spacing.xl,
+    },
+    ratingModalCard: {
+        width: "100%",
+        alignItems: "center",
+        gap: spacing.md,
+        backgroundColor: colors.surfaceRaised,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.lg,
+        ...cardShadow,
+    },
+    ratingModalTitle: {
+        color: colors.text,
+        fontSize: 17,
+        fontFamily: fonts.displaySemiBold,
+    },
+    menuBackdrop: {
+        flex: 1,
+        backgroundColor: "#00000099",
+    },
+    menuSheet: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: colors.surfaceRaised,
+        borderTopLeftRadius: radius.lg,
+        borderTopRightRadius: radius.lg,
+        paddingVertical: spacing.sm,
+        paddingBottom: spacing.lg,
+    },
+    menuRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+    },
+    menuRowText: {
+        color: colors.text,
+        fontSize: 15,
     },
     actionLink: {
         color: colors.accent,
-        marginTop: 4,
+        marginTop: spacing.xs,
+        fontWeight: "600",
     },
-    averageRating: {
-        color: colors.textMuted,
-        fontSize: 13,
-    },
-    form: {
+    formCard: {
         width: "100%",
-        gap: 8,
-        marginTop: 4,
+        gap: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.md,
     },
     input: {
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
+        borderRadius: radius.sm,
         padding: 10,
-        backgroundColor: colors.surface,
+        backgroundColor: colors.surfaceRaised,
         color: colors.text,
     },
     textArea: {
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
+        borderRadius: radius.sm,
         padding: 10,
-        backgroundColor: colors.surface,
+        backgroundColor: colors.surfaceRaised,
         color: colors.text,
         minHeight: 80,
         textAlignVertical: "top",
@@ -410,13 +626,13 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "flex-end",
         alignItems: "center",
-        gap: 16,
+        gap: spacing.md,
     },
     button: {
         backgroundColor: colors.accent,
-        borderRadius: 8,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
+        borderRadius: radius.sm,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.md,
     },
     buttonText: {
         color: colors.text,
@@ -425,20 +641,24 @@ const styles = StyleSheet.create({
     sectionTitle: {
         color: colors.text,
         fontSize: 16,
-        fontWeight: "700",
+        fontFamily: fonts.displaySemiBold,
         alignSelf: "flex-start",
-        marginTop: 8,
+        marginTop: spacing.xs,
     },
     reviewsSection: {
         width: "100%",
-        gap: 12,
+        gap: spacing.sm,
     },
     reviewCard: {
         width: "100%",
-        gap: 4,
-        paddingVertical: 8,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: colors.border,
+        gap: spacing.xs,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.md,
+        ...cardShadow,
+        shadowOpacity: 0.15,
     },
     reviewHeader: {
         flexDirection: "row",
@@ -449,9 +669,19 @@ const styles = StyleSheet.create({
         color: colors.accent,
         fontWeight: "600",
     },
+    reviewScorePill: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        backgroundColor: colors.ratingMuted,
+        borderRadius: radius.pill,
+        paddingVertical: 2,
+        paddingHorizontal: 8,
+    },
     reviewScore: {
-        color: colors.textMuted,
+        color: colors.text,
         fontSize: 12,
+        fontWeight: "600",
     },
     reviewBody: {
         color: colors.text,
@@ -462,6 +692,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: 4,
+        alignSelf: "flex-start",
     },
     reviewLikeCount: {
         color: colors.textMuted,

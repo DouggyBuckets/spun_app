@@ -4,16 +4,18 @@ import {
     Text,
     Image,
     ScrollView,
-    Pressable,
     TextInput,
     StyleSheet,
     ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../../context/AuthContext";
 import { apiFetch, ApiError } from "../../api/client";
-import { colors } from "../../constants/theme";
+import { colors, spacing, radius, cardShadow, fonts } from "../../constants/theme";
+import { Touchable } from "../../components/Touchable";
+import { BackButton } from "../../components/BackButton";
 
 interface Profile {
     id: number;
@@ -231,7 +233,10 @@ export default function ProfileScreen() {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-            <Pressable
+            <View style={styles.topBar}>
+                <BackButton />
+            </View>
+            <Touchable
                 onPress={isOwnProfile ? handlePickAvatar : undefined}
                 disabled={!isOwnProfile || isUploadingAvatar}
             >
@@ -249,11 +254,11 @@ export default function ProfileScreen() {
                         {isUploadingAvatar ? (
                             <ActivityIndicator size="small" color={colors.text} />
                         ) : (
-                            <Text style={styles.avatarBadgeText}>Edit</Text>
+                            <Ionicons name="pencil" size={12} color={colors.text} />
                         )}
                     </View>
                 )}
-            </Pressable>
+            </Touchable>
             {avatarError && <Text style={styles.error}>{avatarError}</Text>}
 
             {!isEditing ? (
@@ -263,7 +268,7 @@ export default function ProfileScreen() {
                     {profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
                 </>
             ) : (
-                <View style={styles.form}>
+                <View style={styles.formCard}>
                     <TextInput
                         style={styles.input}
                         placeholder="Display name"
@@ -283,10 +288,10 @@ export default function ProfileScreen() {
                     />
                     {saveError && <Text style={styles.error}>{saveError}</Text>}
                     <View style={styles.formButtons}>
-                        <Pressable onPress={() => setIsEditing(false)}>
+                        <Touchable onPress={() => setIsEditing(false)}>
                             <Text style={styles.actionLink}>Cancel</Text>
-                        </Pressable>
-                        <Pressable
+                        </Touchable>
+                        <Touchable
                             style={styles.button}
                             onPress={handleSaveProfile}
                             disabled={isSavingProfile}
@@ -294,13 +299,13 @@ export default function ProfileScreen() {
                             <Text style={styles.buttonText}>
                                 {isSavingProfile ? "Saving..." : "Save"}
                             </Text>
-                        </Pressable>
+                        </Touchable>
                     </View>
                 </View>
             )}
 
             <View style={styles.statsRow}>
-                <Pressable
+                <Touchable
                     onPress={() =>
                         router.push({
                             pathname: "/follows/[username]",
@@ -311,8 +316,8 @@ export default function ProfileScreen() {
                     <Text style={styles.stat}>
                         <Text style={styles.statNumber}>{profile.followerCount}</Text> followers
                     </Text>
-                </Pressable>
-                <Pressable
+                </Touchable>
+                <Touchable
                     onPress={() =>
                         router.push({
                             pathname: "/follows/[username]",
@@ -323,29 +328,31 @@ export default function ProfileScreen() {
                     <Text style={styles.stat}>
                         <Text style={styles.statNumber}>{profile.followingCount}</Text> following
                     </Text>
-                </Pressable>
+                </Touchable>
             </View>
 
             {isOwnProfile && !isEditing && (
                 <View style={styles.ownProfileLinks}>
-                    <Pressable onPress={() => setIsEditing(true)}>
+                    <Touchable style={styles.pillLink} onPress={() => setIsEditing(true)}>
+                        <Ionicons name="create-outline" size={14} color={colors.accent} />
                         <Text style={styles.actionLink}>Edit profile</Text>
-                    </Pressable>
-                    <Pressable onPress={() => router.push("/activity")}>
+                    </Touchable>
+                    <Touchable style={styles.pillLink} onPress={() => router.push("/activity")}>
+                        <Ionicons name="time-outline" size={14} color={colors.accent} />
                         <Text style={styles.actionLink}>My activity</Text>
-                    </Pressable>
+                    </Touchable>
                 </View>
             )}
 
             {!isOwnProfile && isFollowing !== null && (
-                <Pressable
+                <Touchable
                     style={[styles.button, isFollowing && styles.buttonOutline]}
                     onPress={handleToggleFollow}
                 >
                     <Text style={[styles.buttonText, isFollowing && styles.buttonTextOutline]}>
                         {isFollowing ? "Following" : "Follow"}
                     </Text>
-                </Pressable>
+                </Touchable>
             )}
             {followError && <Text style={styles.error}>{followError}</Text>}
 
@@ -366,7 +373,7 @@ export default function ProfileScreen() {
                     }
 
                     return (
-                        <Pressable
+                        <Touchable
                             key={position}
                             style={styles.favoriteSlot}
                             disabled={!isOwnProfile && !favorite}
@@ -375,18 +382,22 @@ export default function ProfileScreen() {
                             {favorite?.cover_url ? (
                                 <Image source={{ uri: favorite.cover_url }} style={styles.favoriteCover} />
                             ) : (
-                                <View style={styles.favoriteEmpty} />
+                                <View style={styles.favoriteEmpty}>
+                                    {isOwnProfile && (
+                                        <Ionicons name="add" size={20} color={colors.textMuted} />
+                                    )}
+                                </View>
                             )}
                             {isOwnProfile && favorite && (
-                                <Pressable
+                                <Touchable
                                     style={styles.favoriteRemove}
                                     onPress={() => handleRemoveFavorite(position)}
                                     hitSlop={8}
                                 >
-                                    <Text style={styles.favoriteRemoveText}>✕</Text>
-                                </Pressable>
+                                    <Ionicons name="close" size={12} color={colors.textMuted} />
+                                </Touchable>
                             )}
-                        </Pressable>
+                        </Touchable>
                     );
                 })}
             </View>
@@ -394,50 +405,65 @@ export default function ProfileScreen() {
             <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, styles.noMarginTop]}>Lists</Text>
                 {isOwnProfile && (
-                    <Pressable onPress={() => router.push("/lists/new")}>
-                        <Text style={styles.actionLink}>+ New list</Text>
-                    </Pressable>
+                    <Touchable style={styles.pillLink} onPress={() => router.push("/lists/new")}>
+                        <Ionicons name="add-circle-outline" size={14} color={colors.accent} />
+                        <Text style={styles.actionLink}>New list</Text>
+                    </Touchable>
                 )}
             </View>
             {lists.length === 0 && <Text style={styles.emptyText}>No lists yet.</Text>}
             {lists.map((list) => (
-                <Pressable
+                <Touchable
                     key={list.id}
                     style={styles.activityRow}
                     onPress={() => router.push(`/lists/${list.id}`)}
                 >
-                    <Text style={styles.activityTitle}>{list.title}</Text>
-                    <Text style={styles.activityMeta}>
-                        {list.item_count} {list.item_count === 1 ? "album" : "albums"}
-                        {list.is_ranked ? " · Ranked" : ""}
-                        {!list.is_public ? " · Private" : ""}
-                    </Text>
-                </Pressable>
+                    <Ionicons name="list-outline" size={16} color={colors.textMuted} />
+                    <View style={styles.activityRowText}>
+                        <Text style={styles.activityTitle}>{list.title}</Text>
+                        <Text style={styles.activityMeta}>
+                            {list.item_count} {list.item_count === 1 ? "album" : "albums"}
+                            {list.is_ranked ? " · Ranked" : ""}
+                            {!list.is_public ? " · Private" : ""}
+                        </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                </Touchable>
             ))}
 
             <Text style={styles.sectionTitle}>Recent reviews</Text>
             {reviews.length === 0 && <Text style={styles.emptyText}>No reviews yet.</Text>}
             {reviews.map((review) => (
-                <Pressable key={review.id} style={styles.activityRow} onPress={() => goToEntity(review)}>
-                    <Text style={styles.activityTitle}>{review.entity_name ?? "Unknown"}</Text>
-                    {review.score !== null && (
-                        <Text style={styles.activityMeta}>Rated {review.score / 2}/5</Text>
-                    )}
-                    <Text style={styles.activityBody} numberOfLines={2}>
-                        {review.body}
-                    </Text>
-                </Pressable>
+                <Touchable key={review.id} style={styles.activityRow} onPress={() => goToEntity(review)}>
+                    <View style={styles.activityRowText}>
+                        <View style={styles.activityTitleRow}>
+                            <Text style={styles.activityTitle}>{review.entity_name ?? "Unknown"}</Text>
+                            {review.score !== null && (
+                                <View style={styles.scorePill}>
+                                    <Ionicons name="star" size={10} color={colors.rating} />
+                                    <Text style={styles.scorePillText}>{review.score / 2}/5</Text>
+                                </View>
+                            )}
+                        </View>
+                        <Text style={styles.activityBody} numberOfLines={2}>
+                            {review.body}
+                        </Text>
+                    </View>
+                </Touchable>
             ))}
 
             <Text style={styles.sectionTitle}>Recently logged</Text>
             {spins.length === 0 && <Text style={styles.emptyText}>Nothing logged yet.</Text>}
             {spins.map((spin) => (
-                <Pressable key={spin.id} style={styles.activityRow} onPress={() => goToEntity(spin)}>
-                    <Text style={styles.activityTitle}>{spin.entity_name ?? "Unknown"}</Text>
-                    <Text style={styles.activityMeta}>
-                        {new Date(spin.listened_on).toLocaleDateString()}
-                    </Text>
-                </Pressable>
+                <Touchable key={spin.id} style={styles.activityRow} onPress={() => goToEntity(spin)}>
+                    <Ionicons name="play-circle-outline" size={16} color={colors.textMuted} />
+                    <View style={styles.activityRowText}>
+                        <Text style={styles.activityTitle}>{spin.entity_name ?? "Unknown"}</Text>
+                        <Text style={styles.activityMeta}>
+                            {new Date(spin.listened_on).toLocaleDateString()}
+                        </Text>
+                    </View>
+                </Touchable>
             ))}
         </ScrollView>
     );
@@ -456,20 +482,25 @@ const styles = StyleSheet.create({
     },
     content: {
         alignItems: "center",
-        padding: 24,
-        gap: 8,
+        padding: spacing.lg,
+        gap: spacing.sm,
+    },
+    topBar: {
+        width: "100%",
+        alignItems: "flex-start",
+        marginBottom: spacing.xs,
     },
     avatar: {
         width: 88,
         height: 88,
-        borderRadius: 44,
-        marginBottom: 8,
+        borderRadius: radius.pill,
+        marginBottom: spacing.sm,
     },
     avatarPlaceholder: {
         width: 88,
         height: 88,
-        borderRadius: 44,
-        marginBottom: 8,
+        borderRadius: radius.pill,
+        marginBottom: spacing.sm,
         backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.border,
@@ -478,27 +509,26 @@ const styles = StyleSheet.create({
     },
     avatarBadge: {
         position: "absolute",
-        bottom: 8,
-        alignSelf: "center",
+        bottom: spacing.sm,
+        right: -2,
+        width: 24,
+        height: 24,
+        borderRadius: radius.pill,
         backgroundColor: colors.accent,
-        borderRadius: 10,
-        paddingVertical: 2,
-        paddingHorizontal: 8,
-    },
-    avatarBadgeText: {
-        color: colors.text,
-        fontSize: 11,
-        fontWeight: "600",
+        justifyContent: "center",
+        alignItems: "center",
+        borderWidth: 2,
+        borderColor: colors.background,
     },
     avatarInitial: {
         color: colors.textMuted,
         fontSize: 32,
-        fontWeight: "700",
+        fontFamily: fonts.displayBold,
     },
     displayName: {
         color: colors.text,
-        fontSize: 20,
-        fontWeight: "700",
+        fontSize: 21,
+        fontFamily: fonts.displayBold,
     },
     username: {
         color: colors.textMuted,
@@ -508,12 +538,12 @@ const styles = StyleSheet.create({
         color: colors.text,
         fontSize: 14,
         textAlign: "center",
-        marginTop: 4,
+        marginTop: spacing.xs,
     },
     statsRow: {
         flexDirection: "row",
-        gap: 20,
-        marginTop: 8,
+        gap: spacing.lg,
+        marginTop: spacing.sm,
     },
     stat: {
         color: colors.textMuted,
@@ -524,18 +554,29 @@ const styles = StyleSheet.create({
     },
     actionLink: {
         color: colors.accent,
-        marginTop: 4,
+        fontWeight: "600",
     },
     ownProfileLinks: {
         flexDirection: "row",
-        gap: 20,
+        gap: spacing.sm,
+    },
+    pillLink: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        paddingVertical: 6,
+        paddingHorizontal: spacing.sm,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
     },
     button: {
         backgroundColor: colors.accent,
-        borderRadius: 8,
-        paddingVertical: 8,
-        paddingHorizontal: 24,
-        marginTop: 4,
+        borderRadius: radius.sm,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        marginTop: spacing.xs,
     },
     buttonOutline: {
         backgroundColor: "transparent",
@@ -549,24 +590,29 @@ const styles = StyleSheet.create({
     buttonTextOutline: {
         color: colors.accent,
     },
-    form: {
+    formCard: {
         width: "100%",
-        gap: 8,
+        gap: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.md,
     },
     input: {
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
+        borderRadius: radius.sm,
         padding: 10,
-        backgroundColor: colors.surface,
+        backgroundColor: colors.surfaceRaised,
         color: colors.text,
     },
     textArea: {
         borderWidth: 1,
         borderColor: colors.border,
-        borderRadius: 8,
+        borderRadius: radius.sm,
         padding: 10,
-        backgroundColor: colors.surface,
+        backgroundColor: colors.surfaceRaised,
         color: colors.text,
         minHeight: 60,
         textAlignVertical: "top",
@@ -575,28 +621,28 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "flex-end",
         alignItems: "center",
-        gap: 16,
+        gap: spacing.md,
     },
     sectionTitle: {
         color: colors.text,
         fontSize: 16,
-        fontWeight: "700",
+        fontFamily: fonts.displaySemiBold,
         alignSelf: "flex-start",
-        marginTop: 20,
+        marginTop: spacing.lg,
     },
     sectionHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         width: "100%",
-        marginTop: 20,
+        marginTop: spacing.lg,
     },
     noMarginTop: {
         marginTop: 0,
     },
     favoritesGrid: {
         flexDirection: "row",
-        gap: 8,
+        gap: spacing.sm,
         width: "100%",
     },
     favoriteSlot: {
@@ -610,37 +656,65 @@ const styles = StyleSheet.create({
         right: -6,
         width: 20,
         height: 20,
-        borderRadius: 10,
-        backgroundColor: colors.background,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surfaceRaised,
         borderWidth: 1,
         borderColor: colors.border,
         justifyContent: "center",
         alignItems: "center",
     },
-    favoriteRemoveText: {
-        color: colors.textMuted,
-        fontSize: 11,
-        lineHeight: 12,
-    },
     favoriteCover: {
         width: "100%",
         height: "100%",
-        borderRadius: 6,
+        borderRadius: radius.sm,
     },
     favoriteEmpty: {
         width: "100%",
         height: "100%",
-        borderRadius: 6,
+        borderRadius: radius.sm,
         backgroundColor: colors.surface,
         borderWidth: 1,
         borderColor: colors.border,
         borderStyle: "dashed",
+        justifyContent: "center",
+        alignItems: "center",
     },
     activityRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
         width: "100%",
-        paddingVertical: 10,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: colors.border,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        backgroundColor: colors.surface,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginTop: spacing.xs,
+        ...cardShadow,
+        shadowOpacity: 0.12,
+    },
+    activityRowText: {
+        flex: 1,
+    },
+    activityTitleRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.xs,
+    },
+    scorePill: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 3,
+        backgroundColor: colors.ratingMuted,
+        borderRadius: radius.pill,
+        paddingVertical: 1,
+        paddingHorizontal: 6,
+    },
+    scorePillText: {
+        color: colors.text,
+        fontSize: 11,
+        fontWeight: "600",
     },
     activityTitle: {
         color: colors.text,
