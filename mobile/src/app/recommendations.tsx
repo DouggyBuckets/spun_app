@@ -7,6 +7,7 @@ import { apiFetch, ApiError } from "../api/client";
 import { colors, spacing, radius } from "../constants/theme";
 import { Touchable } from "../components/Touchable";
 import { BackButton } from "../components/BackButton";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface Recommendation {
     id: number;
@@ -77,9 +78,9 @@ export default function RecommendationsScreen() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.topBar}>
+            <SafeAreaView edges={["top"]} style={styles.topBar}>
                 <BackButton />
-            </View>
+            </SafeAreaView>
             {error && <Text style={styles.error}>{error}</Text>}
             <FlatList
                 data={items}

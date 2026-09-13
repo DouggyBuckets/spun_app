@@ -264,3 +264,29 @@ CREATE TABLE activities (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_activities_user_created ON activities(user_id, created_at DESC);
+
+-- ============================================================
+-- TRUST & SAFETY — blocking and reporting, required for App Store
+-- review (guideline 1.2, apps with user-generated content and
+-- user-to-user interaction must let users block/report each other)
+-- ============================================================
+CREATE TABLE blocks (
+    id              SERIAL PRIMARY KEY,
+    blocker_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    blocked_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (blocker_id, blocked_id)
+);
+CREATE INDEX idx_blocks_blocker ON blocks(blocker_id);
+CREATE INDEX idx_blocks_blocked ON blocks(blocked_id);
+
+CREATE TYPE report_target_type AS ENUM ('user', 'review');
+CREATE TABLE reports (
+    id              SERIAL PRIMARY KEY,
+    reporter_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_type     report_target_type NOT NULL,
+    target_id       INTEGER NOT NULL,       -- a user id or a reviews.id, depending on target_type
+    reason          TEXT NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_reports_target ON reports(target_type, target_id);

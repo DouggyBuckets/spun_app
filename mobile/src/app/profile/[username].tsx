@@ -7,6 +7,7 @@ import {
     TextInput,
     StyleSheet,
     ActivityIndicator,
+    Modal,
 } from "react-native";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +17,8 @@ import { apiFetch, ApiError } from "../../api/client";
 import { colors, spacing, radius, cardShadow, fonts } from "../../constants/theme";
 import { Touchable } from "../../components/Touchable";
 import { BackButton } from "../../components/BackButton";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ReportModal } from "../../components/ReportModal";
 
 interface Profile {
     id: number;
@@ -74,7 +77,7 @@ function goToEntity(item: ActivityEntity) {
 
 export default function ProfileScreen() {
     const { username } = useLocalSearchParams<{ username: string }>();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const isOwnProfile = user?.username === username;
 
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -96,6 +99,16 @@ export default function ProfileScreen() {
 
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
     const [avatarError, setAvatarError] = useState<string | null>(null);
+
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isReportOpen, setIsReportOpen] = useState(false);
+    const [isBlocking, setIsBlocking] = useState(false);
+    const [blockError, setBlockError] = useState<string | null>(null);
+
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [deletePassword, setDeletePassword] = useState("");
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     useFocusEffect(
         useCallback(() => {
@@ -215,6 +228,34 @@ export default function ProfileScreen() {
         }
     }
 
+    async function handleBlock() {
+        setBlockError(null);
+        setIsBlocking(true);
+        try {
+            await apiFetch(`/blocks/${username}`, { method: "POST" });
+            router.back();
+        } catch (err) {
+            setBlockError(err instanceof ApiError ? err.message : "Something went wrong");
+            setIsBlocking(false);
+        }
+    }
+
+    async function handleDeleteAccount() {
+        setDeleteError(null);
+        setIsDeletingAccount(true);
+        try {
+            await apiFetch("/users/me", {
+                method: "DELETE",
+                body: JSON.stringify({ password: deletePassword }),
+            });
+            await logout();
+            router.replace("/login");
+        } catch (err) {
+            setDeleteError(err instanceof ApiError ? err.message : "Something went wrong");
+            setIsDeletingAccount(false);
+        }
+    }
+
     if (isLoading) {
         return (
             <View style={styles.centered}>
@@ -233,9 +274,9 @@ export default function ProfileScreen() {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-            <View style={styles.topBar}>
+            <SafeAreaView edges={["top"]} style={styles.topBar}>
                 <BackButton />
-            </View>
+            </SafeAreaView>
             <Touchable
                 onPress={isOwnProfile ? handlePickAvatar : undefined}
                 disabled={!isOwnProfile || isUploadingAvatar}
@@ -341,20 +382,122 @@ export default function ProfileScreen() {
                         <Ionicons name="time-outline" size={14} color={colors.accent} />
                         <Text style={styles.actionLink}>My activity</Text>
                     </Touchable>
+                    <Touchable style={styles.pillLink} onPress={() => router.push("/blocked")}>
+                        <Ionicons name="ban-outline" size={14} color={colors.accent} />
+                        <Text style={styles.actionLink}>Blocked users</Text>
+                    </Touchable>
                 </View>
             )}
 
-            {!isOwnProfile && isFollowing !== null && (
-                <Touchable
-                    style={[styles.button, isFollowing && styles.buttonOutline]}
-                    onPress={handleToggleFollow}
-                >
-                    <Text style={[styles.buttonText, isFollowing && styles.buttonTextOutline]}>
-                        {isFollowing ? "Following" : "Follow"}
-                    </Text>
+            {isOwnProfile && !isEditing && (
+                <Touchable onPress={() => setIsDeleteOpen(true)}>
+                    <Text style={styles.deleteAccountLink}>Delete account</Text>
                 </Touchable>
             )}
+
+            {!isOwnProfile && (
+                <View style={styles.otherProfileActions}>
+                    {isFollowing !== null && (
+                        <Touchable
+                            style={[styles.button, isFollowing && styles.buttonOutline]}
+                            onPress={handleToggleFollow}
+                        >
+                            <Text style={[styles.buttonText, isFollowing && styles.buttonTextOutline]}>
+                                {isFollowing ? "Following" : "Follow"}
+                            </Text>
+                        </Touchable>
+                    )}
+                    <Touchable style={styles.menuTrigger} onPress={() => setIsMenuOpen(true)}>
+                        <Ionicons name="ellipsis-horizontal" size={20} color={colors.textMuted} />
+                    </Touchable>
+                </View>
+            )}
             {followError && <Text style={styles.error}>{followError}</Text>}
+            {blockError && <Text style={styles.error}>{blockError}</Text>}
+
+            <Modal
+                visible={isMenuOpen}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setIsMenuOpen(false)}
+            >
+                <Touchable style={styles.menuBackdrop} onPress={() => setIsMenuOpen(false)} />
+                <View style={styles.menuSheet}>
+                    <Touchable
+                        style={styles.menuRow}
+                        onPress={() => {
+                            setIsMenuOpen(false);
+                            setIsReportOpen(true);
+                        }}
+                    >
+                        <Ionicons name="flag-outline" size={20} color={colors.text} />
+                        <Text style={styles.menuRowText}>Report user</Text>
+                    </Touchable>
+                    <Touchable style={styles.menuRow} onPress={handleBlock} disabled={isBlocking}>
+                        <Ionicons name="ban-outline" size={20} color={colors.error} />
+                        <Text style={[styles.menuRowText, styles.menuRowTextDanger]}>
+                            {isBlocking ? "Blocking..." : "Block user"}
+                        </Text>
+                    </Touchable>
+                </View>
+            </Modal>
+
+            <ReportModal
+                visible={isReportOpen}
+                onClose={() => setIsReportOpen(false)}
+                title={`Report @${username}`}
+                target={{ targetType: "user", username: username as string }}
+            />
+
+            <Modal
+                visible={isDeleteOpen}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setIsDeleteOpen(false)}
+            >
+                <Touchable
+                    style={styles.menuBackdrop}
+                    onPress={() => setIsDeleteOpen(false)}
+                />
+                <View style={styles.deleteModalCenter} pointerEvents="box-none">
+                    <View style={styles.deleteModalCard}>
+                        <Text style={styles.deleteModalTitle}>Delete your account?</Text>
+                        <Text style={styles.deleteModalBody}>
+                            This permanently deletes your profile, reviews, ratings, lists, and
+                            follows. This can't be undone.
+                        </Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter your password to confirm"
+                            placeholderTextColor={colors.textMuted}
+                            value={deletePassword}
+                            onChangeText={setDeletePassword}
+                            secureTextEntry
+                        />
+                        {deleteError && <Text style={styles.error}>{deleteError}</Text>}
+                        <View style={styles.formButtons}>
+                            <Touchable
+                                onPress={() => {
+                                    setIsDeleteOpen(false);
+                                    setDeletePassword("");
+                                    setDeleteError(null);
+                                }}
+                            >
+                                <Text style={styles.actionLink}>Cancel</Text>
+                            </Touchable>
+                            <Touchable
+                                style={styles.deleteConfirmButton}
+                                onPress={handleDeleteAccount}
+                                disabled={isDeletingAccount || !deletePassword}
+                            >
+                                <Text style={styles.buttonText}>
+                                    {isDeletingAccount ? "Deleting..." : "Delete"}
+                                </Text>
+                            </Touchable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             <Text style={styles.sectionTitle}>Favorites</Text>
             <View style={styles.favoritesGrid}>
@@ -589,6 +732,90 @@ const styles = StyleSheet.create({
     },
     buttonTextOutline: {
         color: colors.accent,
+    },
+    otherProfileActions: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+    },
+    menuTrigger: {
+        width: 36,
+        height: 36,
+        borderRadius: radius.pill,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: spacing.xs,
+    },
+    menuBackdrop: {
+        flex: 1,
+        backgroundColor: "#00000099",
+    },
+    menuSheet: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: colors.surfaceRaised,
+        borderTopLeftRadius: radius.lg,
+        borderTopRightRadius: radius.lg,
+        paddingVertical: spacing.sm,
+        paddingBottom: spacing.lg,
+    },
+    menuRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: spacing.sm,
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing.lg,
+    },
+    menuRowText: {
+        color: colors.text,
+        fontSize: 15,
+    },
+    menuRowTextDanger: {
+        color: colors.error,
+    },
+    deleteAccountLink: {
+        color: colors.error,
+        fontSize: 12,
+        marginTop: spacing.sm,
+    },
+    deleteModalCenter: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    deleteModalCard: {
+        width: "85%",
+        backgroundColor: colors.surfaceRaised,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.lg,
+        gap: spacing.sm,
+    },
+    deleteModalTitle: {
+        color: colors.text,
+        fontSize: 16,
+        fontFamily: fonts.displaySemiBold,
+    },
+    deleteModalBody: {
+        color: colors.textMuted,
+        fontSize: 13,
+        marginBottom: spacing.xs,
+    },
+    deleteConfirmButton: {
+        backgroundColor: colors.error,
+        borderRadius: radius.sm,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.lg,
     },
     formCard: {
         width: "100%",

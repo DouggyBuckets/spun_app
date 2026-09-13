@@ -12,6 +12,8 @@ import followRoutes from "../modules/follows/follows.routes";
 import spinRoutes from "../modules/spins/spins.routes";
 import feedRoutes from "../modules/feed/feed.routes";
 import recommendationRoutes from "../modules/recommendations/recommendations.routes";
+import blockRoutes from "../modules/blocks/blocks.routes";
+import reportRoutes from "../modules/reports/reports.routes";
 
 const router = Router();
 router.use("/auth", authRoutes);
@@ -27,5 +29,7 @@ router.use("/follows", followRoutes);
 router.use("/spins", spinRoutes);
 router.use("/feed", feedRoutes);
 router.use("/recommendations", recommendationRoutes);
+router.use("/blocks", blockRoutes);
+router.use("/reports", reportRoutes);
 
 export default router;

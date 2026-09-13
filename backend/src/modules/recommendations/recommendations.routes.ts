@@ -4,6 +4,7 @@ import { db } from "../../db";
 import { badRequest, notFound } from "../../errors";
 import { requireAuth } from "../../middleware/auth";
 import { getOrCreateAlbum, getOrCreateSongByTrackId } from "../catalog/catalogImport";
+import { areBlocked } from "../blocks/blocksHelper";
 
 const router = Router();
 
@@ -14,6 +15,7 @@ async function resolveRecipient(username: string, senderId: number) {
     const recipient = result.rows[0];
     if (!recipient) throw notFound("User not found");
     if (recipient.id === senderId) throw badRequest("You can't recommend something to yourself");
+    if (await areBlocked(senderId, recipient.id)) throw notFound("User not found");
     return recipient.id;
 }
 

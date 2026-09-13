@@ -6,6 +6,8 @@ import { useAuth } from "../context/AuthContext";
 import { apiFetch, ApiError } from "../api/client";
 import { colors, spacing, radius, fonts } from "../constants/theme";
 import { Touchable } from "../components/Touchable";
+import { ReportModal } from "../components/ReportModal";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const LIMIT = 20;
 
@@ -106,6 +108,7 @@ export default function HomeScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [reportingReviewId, setReportingReviewId] = useState<number | null>(null);
 
     useFocusEffect(
         useCallback(() => {
@@ -168,7 +171,7 @@ export default function HomeScreen() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
+            <SafeAreaView edges={["top"]} style={styles.header}>
                 <Text style={styles.brand}>Spun</Text>
                 <View style={styles.headerLinks}>
                     <Touchable style={styles.headerIcon} onPress={() => router.push("/search")}>
@@ -187,7 +190,7 @@ export default function HomeScreen() {
                         <Ionicons name="log-out-outline" size={18} color={colors.textMuted} />
                     </Touchable>
                 </View>
-            </View>
+            </SafeAreaView>
 
             {error && <Text style={styles.error}>{error}</Text>}
 
@@ -237,45 +240,53 @@ export default function HomeScreen() {
                         {popular.length > 0 ? (
                             <View style={styles.popularSection}>
                                 {popular.map((review) => (
-                                    <Touchable
-                                        key={review.id}
-                                        style={styles.popularCard}
-                                        onPress={() => goToReviewEntity(review)}
-                                    >
-                                        {review.cover_url ? (
-                                            <Image
-                                                source={{ uri: review.cover_url }}
-                                                style={styles.popularCover}
-                                            />
-                                        ) : (
-                                            <View style={styles.popularCover} />
-                                        )}
-                                        <View style={styles.popularText}>
-                                            <View style={styles.popularTitleRow}>
-                                                <Text style={styles.popularEntity} numberOfLines={1}>
-                                                    {review.entity_name ?? "Unknown"}
+                                    <View key={review.id} style={styles.popularCard}>
+                                        <Touchable
+                                            style={styles.popularCardContent}
+                                            onPress={() => goToReviewEntity(review)}
+                                        >
+                                            {review.cover_url ? (
+                                                <Image
+                                                    source={{ uri: review.cover_url }}
+                                                    style={styles.popularCover}
+                                                />
+                                            ) : (
+                                                <View style={styles.popularCover} />
+                                            )}
+                                            <View style={styles.popularText}>
+                                                <View style={styles.popularTitleRow}>
+                                                    <Text style={styles.popularEntity} numberOfLines={1}>
+                                                        {review.entity_name ?? "Unknown"}
+                                                    </Text>
+                                                    {review.score !== null && (
+                                                        <View style={styles.scorePill}>
+                                                            <Ionicons name="star" size={10} color={colors.rating} />
+                                                            <Text style={styles.scorePillText}>
+                                                                {review.score / 2}/5
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <Text style={styles.popularAuthor}>
+                                                    by {review.display_name ?? review.username}
                                                 </Text>
-                                                {review.score !== null && (
-                                                    <View style={styles.scorePill}>
-                                                        <Ionicons name="star" size={10} color={colors.rating} />
-                                                        <Text style={styles.scorePillText}>
-                                                            {review.score / 2}/5
-                                                        </Text>
-                                                    </View>
-                                                )}
+                                                <Text style={styles.popularBody} numberOfLines={2}>
+                                                    {review.body}
+                                                </Text>
+                                                <View style={styles.popularLikeRow}>
+                                                    <Ionicons name="heart" size={12} color={colors.like} />
+                                                    <Text style={styles.popularLikeCount}>{review.like_count}</Text>
+                                                </View>
                                             </View>
-                                            <Text style={styles.popularAuthor}>
-                                                by {review.display_name ?? review.username}
-                                            </Text>
-                                            <Text style={styles.popularBody} numberOfLines={2}>
-                                                {review.body}
-                                            </Text>
-                                            <View style={styles.popularLikeRow}>
-                                                <Ionicons name="heart" size={12} color={colors.like} />
-                                                <Text style={styles.popularLikeCount}>{review.like_count}</Text>
-                                            </View>
-                                        </View>
-                                    </Touchable>
+                                        </Touchable>
+                                        <Touchable
+                                            style={styles.popularReportButton}
+                                            hitSlop={8}
+                                            onPress={() => setReportingReviewId(review.id)}
+                                        >
+                                            <Ionicons name="flag-outline" size={13} color={colors.textMuted} />
+                                        </Touchable>
+                                    </View>
                                 ))}
                             </View>
                         ) : (
@@ -337,6 +348,13 @@ export default function HomeScreen() {
                         </Touchable>
                     ) : null
                 }
+            />
+
+            <ReportModal
+                visible={reportingReviewId !== null}
+                onClose={() => setReportingReviewId(null)}
+                title="Report review"
+                target={{ targetType: "review", reviewId: reportingReviewId ?? 0 }}
             />
         </View>
     );
@@ -419,13 +437,21 @@ const styles = StyleSheet.create({
     },
     popularCard: {
         flexDirection: "row",
-        gap: spacing.sm,
+        alignItems: "flex-start",
         backgroundColor: colors.surface,
         borderRadius: radius.md,
         borderWidth: 1,
         borderColor: colors.border,
         padding: spacing.sm,
         marginBottom: spacing.sm,
+    },
+    popularCardContent: {
+        flex: 1,
+        flexDirection: "row",
+        gap: spacing.sm,
+    },
+    popularReportButton: {
+        padding: 4,
     },
     popularCover: {
         width: 52,

@@ -17,6 +17,8 @@ import { StarRating } from "../../components/StarRating";
 import { useToggle } from "../../hooks/useToggle";
 import { Touchable } from "../../components/Touchable";
 import { BackButton } from "../../components/BackButton";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ReportModal } from "../../components/ReportModal";
 
 interface RatingResponse {
     score: number | null;
@@ -66,6 +68,7 @@ export default function SongDetailScreen() {
     const [isSubmittingReview, setIsSubmittingReview] = useState(false);
     const [reviewSubmitted, setReviewSubmitted] = useState(false);
     const [reviewError, setReviewError] = useState<string | null>(null);
+    const [reportingReviewId, setReportingReviewId] = useState<number | null>(null);
 
     const [isRecommendOpen, setIsRecommendOpen] = useState(false);
     const [recipientUsername, setRecipientUsername] = useState("");
@@ -200,9 +203,9 @@ export default function SongDetailScreen() {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-            <View style={styles.topBar}>
+            <SafeAreaView edges={["top"]} style={styles.topBar}>
                 <BackButton />
-            </View>
+            </SafeAreaView>
             {imageUrl && <Image source={{ uri: imageUrl }} style={styles.cover} />}
             <Text style={styles.title}>{name}</Text>
             <Text style={styles.artist}>{artistNames}</Text>
@@ -407,23 +410,38 @@ export default function SongDetailScreen() {
                                 )}
                             </View>
                             <Text style={styles.reviewBody}>{review.body}</Text>
-                            <Touchable
-                                style={styles.reviewLikeRow}
-                                onPress={() => handleToggleReviewLike(review)}
-                            >
-                                <Ionicons
-                                    name={review.liked_by_me ? "heart" : "heart-outline"}
-                                    size={16}
-                                    color={review.liked_by_me ? colors.like : colors.textMuted}
-                                />
-                                {review.like_count > 0 && (
-                                    <Text style={styles.reviewLikeCount}>{review.like_count}</Text>
-                                )}
-                            </Touchable>
+                            <View style={styles.reviewFooter}>
+                                <Touchable
+                                    style={styles.reviewLikeRow}
+                                    onPress={() => handleToggleReviewLike(review)}
+                                >
+                                    <Ionicons
+                                        name={review.liked_by_me ? "heart" : "heart-outline"}
+                                        size={16}
+                                        color={review.liked_by_me ? colors.like : colors.textMuted}
+                                    />
+                                    {review.like_count > 0 && (
+                                        <Text style={styles.reviewLikeCount}>{review.like_count}</Text>
+                                    )}
+                                </Touchable>
+                                <Touchable
+                                    hitSlop={8}
+                                    onPress={() => setReportingReviewId(review.id)}
+                                >
+                                    <Ionicons name="flag-outline" size={14} color={colors.textMuted} />
+                                </Touchable>
+                            </View>
                         </View>
                     ))}
                 </View>
             )}
+
+            <ReportModal
+                visible={reportingReviewId !== null}
+                onClose={() => setReportingReviewId(null)}
+                title="Report review"
+                target={{ targetType: "review", reviewId: reportingReviewId ?? 0 }}
+            />
         </ScrollView>
     );
 }
@@ -687,6 +705,11 @@ const styles = StyleSheet.create({
         color: colors.text,
         fontSize: 14,
         textAlign: "left",
+    },
+    reviewFooter: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
     reviewLikeRow: {
         flexDirection: "row",

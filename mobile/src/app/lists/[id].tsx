@@ -16,6 +16,7 @@ import { apiFetch, ApiError } from "../../api/client";
 import { colors, spacing, radius, fonts } from "../../constants/theme";
 import { Touchable } from "../../components/Touchable";
 import { BackButton } from "../../components/BackButton";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface ListItem {
     id: number;
@@ -166,9 +167,9 @@ export default function ListDetailScreen() {
             keyExtractor={(item) => item.spotify_id}
             ListHeaderComponent={
                 <View style={styles.header}>
-                    <View style={styles.topBar}>
+                    <SafeAreaView edges={["top"]} style={styles.topBar}>
                         <BackButton />
-                    </View>
+                    </SafeAreaView>
                     {!isEditing ? (
                         <>
                             <Text style={styles.title}>{list.title}</Text>

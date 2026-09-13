@@ -6,6 +6,7 @@ import { apiFetch, ApiError } from "../../api/client";
 import { colors, spacing, radius } from "../../constants/theme";
 import { Touchable } from "../../components/Touchable";
 import { BackButton } from "../../components/BackButton";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Tab = "followers" | "following";
 
@@ -51,9 +52,9 @@ export default function FollowsScreen() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.topBar}>
+            <SafeAreaView edges={["top"]} style={styles.topBar}>
                 <BackButton />
-            </View>
+            </SafeAreaView>
             <View style={styles.tabs}>
                 {(["followers", "following"] as Tab[]).map((t) => (
                     <Touchable

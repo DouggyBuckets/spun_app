@@ -6,6 +6,7 @@ import {
 } from "@expo-google-fonts/space-grotesk";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { View, Text, StyleSheet } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "../constants/theme";
 
 function RootLayoutContent() {
@@ -47,8 +48,10 @@ const styles = StyleSheet.create({
 
 export default function RootLayout() {
     return (
-        <AuthProvider>
-            <RootLayoutContent />
-        </AuthProvider>
+        <SafeAreaProvider>
+            <AuthProvider>
+                <RootLayoutContent />
+            </AuthProvider>
+        </SafeAreaProvider>
     );
 }

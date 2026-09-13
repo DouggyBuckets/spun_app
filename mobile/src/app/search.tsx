@@ -7,6 +7,7 @@ import { apiFetch, ApiError } from "../api/client";
 import { colors, spacing, radius, fonts } from "../constants/theme";
 import { Touchable } from "../components/Touchable";
 import { BackButton } from "../components/BackButton";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type SearchType = "albums" | "tracks" | "artists" | "users";
 
@@ -145,10 +146,10 @@ export default function SearchScreen() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
+            <SafeAreaView edges={["top"]} style={styles.header}>
                 <BackButton />
                 <Text style={styles.headerTitle}>Search</Text>
-            </View>
+            </SafeAreaView>
 
             <View style={styles.inputRow}>
                 <Ionicons name="search" size={18} color={colors.textMuted} />

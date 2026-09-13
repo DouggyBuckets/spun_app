@@ -17,6 +17,8 @@ import { StarRating } from "../../components/StarRating";
 import { useToggle } from "../../hooks/useToggle";
 import { Touchable } from "../../components/Touchable";
 import { BackButton } from "../../components/BackButton";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ReportModal } from "../../components/ReportModal";
 
 interface Track {
     id: string;
@@ -95,6 +97,8 @@ export default function AlbumDetailScreen() {
     const [isSubmittingReview, setIsSubmittingReview] = useState(false);
     const [reviewSubmitted, setReviewSubmitted] = useState(false);
     const [reviewError, setReviewError] = useState<string | null>(null);
+
+    const [reportingReviewId, setReportingReviewId] = useState<number | null>(null);
 
     // recommend
     const [isRecommendOpen, setIsRecommendOpen] = useState(false);
@@ -258,9 +262,9 @@ export default function AlbumDetailScreen() {
             keyExtractor={(track) => track.id}
             ListHeaderComponent={
                 <View style={styles.header}>
-                    <View style={styles.topBar}>
+                    <SafeAreaView edges={["top"]} style={styles.topBar}>
                         <BackButton />
-                    </View>
+                    </SafeAreaView>
                     {album.images[0] && (
                         <Image source={{ uri: album.images[0].url }} style={styles.cover} />
                     )}
@@ -411,6 +415,13 @@ export default function AlbumDetailScreen() {
                         </View>
                     </Modal>
 
+                    <ReportModal
+                        visible={reportingReviewId !== null}
+                        onClose={() => setReportingReviewId(null)}
+                        title="Report review"
+                        target={{ targetType: "review", reviewId: reportingReviewId ?? 0 }}
+                    />
+
                     {isReviewOpen && (
                         <View style={styles.formCard}>
                             <TextInput
@@ -493,19 +504,27 @@ export default function AlbumDetailScreen() {
                                         )}
                                     </View>
                                     <Text style={styles.reviewBody}>{review.body}</Text>
-                                    <Touchable
-                                        style={styles.reviewLikeRow}
-                                        onPress={() => handleToggleReviewLike(review)}
-                                    >
-                                        <Ionicons
-                                            name={review.liked_by_me ? "heart" : "heart-outline"}
-                                            size={16}
-                                            color={review.liked_by_me ? colors.like : colors.textMuted}
-                                        />
-                                        {review.like_count > 0 && (
-                                            <Text style={styles.reviewLikeCount}>{review.like_count}</Text>
-                                        )}
-                                    </Touchable>
+                                    <View style={styles.reviewFooter}>
+                                        <Touchable
+                                            style={styles.reviewLikeRow}
+                                            onPress={() => handleToggleReviewLike(review)}
+                                        >
+                                            <Ionicons
+                                                name={review.liked_by_me ? "heart" : "heart-outline"}
+                                                size={16}
+                                                color={review.liked_by_me ? colors.like : colors.textMuted}
+                                            />
+                                            {review.like_count > 0 && (
+                                                <Text style={styles.reviewLikeCount}>{review.like_count}</Text>
+                                            )}
+                                        </Touchable>
+                                        <Touchable
+                                            hitSlop={8}
+                                            onPress={() => setReportingReviewId(review.id)}
+                                        >
+                                            <Ionicons name="flag-outline" size={14} color={colors.textMuted} />
+                                        </Touchable>
+                                    </View>
                                 </View>
                             ))}
                         </View>
@@ -856,6 +875,11 @@ const styles = StyleSheet.create({
         color: colors.text,
         fontSize: 14,
         textAlign: "left",
+    },
+    reviewFooter: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
     reviewLikeRow: {
         flexDirection: "row",

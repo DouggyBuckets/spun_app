@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "../../db";
 import { requireAuth } from "../../middleware/auth";
 import { badRequest, notFound } from "../../errors";
+import { areBlocked } from "../blocks/blocksHelper";
 
 const router = Router();
 
@@ -14,6 +15,7 @@ router.post("/:username", requireAuth, async (req, res) => {
     const followee = followeeResult.rows[0];
     if (!followee) throw notFound("User not found");
     if (followee.id === followerId) throw badRequest("You can't follow yourself");
+    if (await areBlocked(followerId, followee.id)) throw notFound("User not found");
 
     await db.query(
         `INSERT INTO follows (follower_id, followee_id)

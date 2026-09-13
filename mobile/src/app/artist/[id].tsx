@@ -6,6 +6,7 @@ import { apiFetch, ApiError } from "../../api/client";
 import { colors, spacing, radius, fonts } from "../../constants/theme";
 import { Touchable } from "../../components/Touchable";
 import { BackButton } from "../../components/BackButton";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 interface ArtistAlbum {
     id: string;
@@ -62,9 +63,9 @@ export default function ArtistDetailScreen() {
             keyExtractor={(album) => album.id}
             ListHeaderComponent={
                 <View style={styles.header}>
-                    <View style={styles.topBar}>
+                    <SafeAreaView edges={["top"]} style={styles.topBar}>
                         <BackButton />
-                    </View>
+                    </SafeAreaView>
                     <View style={styles.artistIcon}>
                         <Ionicons name="mic-outline" size={28} color={colors.textMuted} />
                     </View>

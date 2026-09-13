@@ -5,6 +5,7 @@ import { apiFetch, ApiError } from "../../api/client";
 import { colors, spacing, radius } from "../../constants/theme";
 import { Touchable } from "../../components/Touchable";
 import { BackButton } from "../../components/BackButton";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function NewListScreen() {
     const { albumId } = useLocalSearchParams<{ albumId?: string }>();
@@ -43,9 +44,9 @@ export default function NewListScreen() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.topBar}>
+            <SafeAreaView edges={["top"]} style={styles.topBar}>
                 <BackButton />
-            </View>
+            </SafeAreaView>
             <TextInput
                 style={styles.input}
                 placeholder="Title"
