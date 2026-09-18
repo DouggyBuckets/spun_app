@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spun Privacy Policy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f8;
+    --surface: #ffffff;
+    --surface-2: #eeecf4;
+    --border: #ddd8e6;
+    --text: #1c1b1f;
+    --text-muted: #6b6875;
+    --accent: #6d28d9;
+    --accent-soft: #6d28d914;
+    --gold: #a9791f;
+    --rose: #b23a56;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121212;
+      --surface: #1a1a1a;
+      --surface-2: #212121;
+      --border: #333333;
+      --text: #ededed;
+      --text-muted: #9a9a9a;
+      --accent: #a385f7;
+      --gold: #e0a63c;
+      --rose: #d6516f;
+      --accent-soft: #8b5cf61f;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #121212;
+    --surface: #1a1a1a;
+    --surface-2: #212121;
+    --border: #333333;
+    --text: #ededed;
+    --text-muted: #9a9a9a;
+    --accent: #a385f7;
+    --gold: #e0a63c;
+    --rose: #d6516f;
+    --accent-soft: #8b5cf61f;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    line-height: 1.65;
+    padding: 0 20px 96px;
+  }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  .sleeve {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  /* ---------- header: record sleeve ---------- */
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 56px 0 36px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .groove {
+    flex: none;
+    width: 84px;
+    height: 84px;
+  }
+
+  .groove circle {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 1.5;
+  }
+
+  .groove .label {
+    fill: var(--accent);
+  }
+
+  .groove .spindle {
+    fill: var(--bg);
+  }
+
+  .header-text .kicker {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 8px;
+  }
+
+  .header-text h1 {
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: clamp(28px, 5vw, 38px);
+    line-height: 1.1;
+    margin: 0 0 10px;
+    text-wrap: balance;
+  }
+
+  .header-text .dek {
+    font-family: "Source Serif 4", serif;
+    font-style: italic;
+    color: var(--text-muted);
+    margin: 0;
+    font-size: 15px;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    padding: 18px 0 0;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .meta-row span b { color: var(--text); font-weight: 500; }
+
+  /* ---------- tracklist ---------- */
+
+  .tracklist { padding-top: 8px; }
+
+  .track {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 4px 20px;
+    padding: 34px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .track:last-of-type { border-bottom: none; }
+
+  .track-number {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    color: var(--gold);
+    padding-top: 3px;
+  }
+
+  .track h2 {
+    grid-column: 2;
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+
+  .track .body {
+    grid-column: 2;
+  }
+
+  .track .body p { margin: 0 0 14px; max-width: 62ch; }
+  .track .body p:last-child { margin-bottom: 0; }
+
+  .track .body ul {
+    margin: 0 0 14px;
+    padding-left: 1.15em;
+    max-width: 62ch;
+  }
+  .track .body li { margin-bottom: 6px; }
+  .track .body li:last-child { margin-bottom: 0; }
+
+  .track .body strong { font-weight: 700; color: var(--text); }
+
+  .callout {
+    grid-column: 2;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    padding: 16px 18px;
+    margin-top: 4px;
+  }
+
+  .callout p { margin: 0; max-width: none; }
+
+  .callout .callout-label {
+    display: block;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .third-parties {
+    grid-column: 2;
+    display: grid;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .tp-row {
+    display: grid;
+    grid-template-columns: 118px 1fr;
+    gap: 14px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+    font-size: 15px;
+  }
+  .tp-row:first-child { border-top: none; padding-top: 0; }
+
+  .tp-row .tp-name {
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .tp-row .tp-desc { color: var(--text-muted); font-size: 14px; }
+
+  /* ---------- footer: label / spine ---------- */
+
+  .footer {
+    margin-top: 24px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .footer a { color: var(--text-muted); }
+  .footer .side { color: var(--gold); }
+
+  @media (max-width: 520px) {
+    .header { gap: 18px; padding-top: 40px; }
+    .groove { width: 60px; height: 60px; }
+    .track { grid-template-columns: 32px 1fr; gap: 2px 14px; }
+    .track-number { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sleeve">
+
+  <header class="header">
+    <svg class="groove" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="48" />
+      <circle cx="50" cy="50" r="39" />
+      <circle cx="50" cy="50" r="31" />
+      <circle cx="50" cy="50" r="23" class="label" />
+      <circle cx="50" cy="50" r="3.4" class="spindle" />
+    </svg>
+    <div class="header-text">
+      <p class="kicker">Spun &middot; Legal</p>
+      <h1>Privacy Policy</h1>
+      <p class="dek">What we collect when you rate, review, and follow music &mdash; and how to make us forget it.</p>
+    </div>
+  </header>
+
+  <div class="meta-row">
+    <span>Effective <b>September 13, 2026</b></span>
+    <span>Applies to <b>Spun for iOS &amp; Android</b></span>
+    <span>Contact <b><a href="mailto:spun.app.developer@gmail.com">spun.app.developer@gmail.com</a></b></span>
+  </div>
+
+  <div class="tracklist">
+
+    <section class="track">
+      <span class="track-number">01</span>
+      <h2>Information we collect</h2>
+      <div class="body">
+        <p>When you create an account, we collect your <strong>username, email address, and password</strong>. Your password is stored as a salted bcrypt hash &mdash; we never store or see it in plain text.</p>
+        <p>Anything you choose to add to your profile &mdash; <strong>display name, bio, and profile photo</strong> &mdash; is stored so it can be shown to other users.</p>
+        <p>We store the activity you generate using the app:</p>
+        <ul>
+          <li>Ratings, written reviews, and listen logs for albums and songs</li>
+          <li>Lists, favorites, and "listen later" saves</li>
+          <li>Likes, follows, and recommendations you send to other users</li>
+          <li>Reports you file, and the reason you give, if you report a user or a review</li>
+        </ul>
+        <p>We don't request your location, contacts, or any device identifiers beyond what's technically required to run the app and keep you signed in.</p>
+      </div>
+    </section>
+
+    <section class="track">
+      <span class="track-number">02</span>
+      <h2>How we use it</h2>
+      <div class="body">
+        <p>Your data runs the features you'd expect: your profile, your ratings feeding album and song averages, your feed showing activity from people you follow, and search finding other listeners.</p>
+        <p>When you rate or review something, we match it against public catalog data (titles, artists, cover art) from the <strong>Spotify Web API</strong> &mdash; this is a one-way lookup of music metadata, not a connection to any Spotify account of yours.</p>
+        <p>When you or someone else files a safety report, we use it to review the account or review in question and to enforce blocks.</p>
+        <div class="callout">
+          <span class="callout-label">No ads, no tracking</span>
+          <p>Spun shows no advertising and runs no third-party analytics or tracking SDKs. We don't sell your data, and we don't use it to build advertising profiles &mdash; there's nowhere for that data to go.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="track">
+      <span class="track-number">03</span>
+      <h2>Who we share it with</h2>
+      <div class="body">
+        <p>A small number of infrastructure providers process data on our behalf, strictly to run the app:</p>
+      </div>
+      <div class="third-parties">
+        <div class="tp-row">
+          <span class="tp-name">Cloudinary</span>
+          <span class="tp-desc">Hosts profile photos you upload.</span>
+        </div>
+        <div class="tp-row">
+          <span class="tp-name">Fly.io &amp; Neon</span>
+          <span class="tp-desc">Host the app's server and database.</span>
+        </div>
+        <div class="tp-row">
+          <span class="tp-name">Spotify Web API</span>
+          <span class="tp-desc">Supplies public music catalog data. No account data of yours is sent to Spotify.</span>
+        </div>
+      </div>
+      <div class="body">
+        <p style="margin-top: 14px;">We do not share your data with advertisers, data brokers, or anyone outside the providers listed above.</p>
+      </div>
+    </section>
+
+    <section class="track">
+      <span class="track-number">04</span>
+      <h2>Your choices</h2>
+      <div class="body">
+        <p>You can edit or remove most of what you've added &mdash; profile info, favorites, lists, reviews &mdash; directly from your profile at any time.</p>
+        <p>If someone is bothering you, you can <strong>block</strong> them (which also hides your profile from them) or <strong>report</strong> a user or a review for us to look into, both from directly within the app.</p>
+        <div class="callout">
+          <span class="callout-label">Deleting your account</span>
+          <p>Go to <strong>Profile &rarr; Delete account</strong>, confirm with your password, and your account is deleted immediately and permanently &mdash; your profile, reviews, ratings, lists, follows, and every other trace of your account. There's no waiting period and no need to email us, though you're welcome to if anything goes wrong.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="track">
+      <span class="track-number">05</span>
+      <h2>How long we keep it</h2>
+      <div class="body">
+        <p>We keep your data for as long as your account is active. If you delete your account, it and everything tied to it is removed from our database right away &mdash; deletion isn't something we queue up or delay.</p>
+      </div>
+    </section>
+
+    <section class="track">
+      <span class="track-number">06</span>
+      <h2>Children's privacy</h2>
+      <div class="body">
+        <p>Spun isn't directed at children, and we don't knowingly collect information from anyone under 13. If you believe a child has created an account, contact us and we'll remove it.</p>
+      </div>
+    </section>
+
+    <section class="track">
+      <span class="track-number">07</span>
+      <h2>Changes to this policy</h2>
+      <div class="body">
+        <p>If this policy changes in a way that matters, we'll update the effective date above. Continuing to use Spun after a change means you accept the update.</p>
+      </div>
+    </section>
+
+    <section class="track">
+      <span class="track-number">08</span>
+      <h2>Contact</h2>
+      <div class="body">
+        <p>Questions, requests to access or delete your data, or anything else &mdash; write to <a href="mailto:spun.app.developer@gmail.com">spun.app.developer@gmail.com</a>.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="footer">
+    <span class="side">Side A &middot; 08 tracks</span>
+    <span>&copy; 2026 Spun</span>
+  </footer>
+
+</div>
+
+</body>
+</html>
