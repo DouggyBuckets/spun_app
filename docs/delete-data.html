@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delete Your Spun Data</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f8;
+    --surface: #ffffff;
+    --surface-2: #eeecf4;
+    --border: #ddd8e6;
+    --text: #1c1b1f;
+    --text-muted: #6b6875;
+    --accent: #6d28d9;
+    --accent-soft: #6d28d914;
+    --gold: #a9791f;
+    --rose: #b23a56;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121212;
+      --surface: #1a1a1a;
+      --surface-2: #212121;
+      --border: #333333;
+      --text: #ededed;
+      --text-muted: #9a9a9a;
+      --accent: #a385f7;
+      --gold: #e0a63c;
+      --rose: #d6516f;
+      --accent-soft: #8b5cf61f;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #121212;
+    --surface: #1a1a1a;
+    --surface-2: #212121;
+    --border: #333333;
+    --text: #ededed;
+    --text-muted: #9a9a9a;
+    --accent: #a385f7;
+    --gold: #e0a63c;
+    --rose: #d6516f;
+    --accent-soft: #8b5cf61f;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    line-height: 1.65;
+    padding: 0 20px 96px;
+  }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  .sleeve { max-width: 700px; margin: 0 auto; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 56px 0 36px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .groove { flex: none; width: 84px; height: 84px; }
+  .groove circle { fill: none; stroke: var(--border); stroke-width: 1.5; }
+  .groove .label { fill: var(--gold); }
+  .groove .spindle { fill: var(--bg); }
+
+  .header-text .kicker {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 8px;
+  }
+
+  .header-text h1 {
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: clamp(28px, 5vw, 38px);
+    line-height: 1.1;
+    margin: 0 0 10px;
+    text-wrap: balance;
+  }
+
+  .header-text .dek {
+    font-family: "Source Serif 4", serif;
+    font-style: italic;
+    color: var(--text-muted);
+    margin: 0;
+    font-size: 15px;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    padding: 18px 0 0;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .meta-row span b { color: var(--text); font-weight: 500; }
+
+  .tracklist { padding-top: 8px; }
+
+  .track {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 4px 20px;
+    padding: 34px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .track:last-of-type { border-bottom: none; }
+
+  .track-number {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    color: var(--gold);
+    padding-top: 3px;
+  }
+
+  .track h2 {
+    grid-column: 2;
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+
+  .track .body { grid-column: 2; }
+  .track .body p { margin: 0 0 14px; max-width: 62ch; }
+  .track .body p:last-child { margin-bottom: 0; }
+
+  .callout {
+    grid-column: 2;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    padding: 16px 18px;
+    margin-top: 4px;
+  }
+  .callout p { margin: 0; max-width: none; }
+  .callout .callout-label {
+    display: block;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .data-table {
+    grid-column: 2;
+    display: grid;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .dt-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    font-size: 15px;
+  }
+  .dt-row:first-child { border-top: none; padding-top: 0; }
+  .dt-row .dt-name {
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .dt-row .dt-desc { color: var(--text-muted); font-size: 14px; }
+  .dt-row .dt-desc b { color: var(--text); font-weight: 600; }
+
+  .footer {
+    margin-top: 24px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .footer a { color: var(--text-muted); }
+  .footer .side { color: var(--gold); }
+
+  @media (max-width: 520px) {
+    .header { gap: 18px; padding-top: 40px; }
+    .groove { width: 60px; height: 60px; }
+    .track { grid-template-columns: 32px 1fr; gap: 2px 14px; }
+    .track-number { font-size: 13px; }
+    .dt-row { grid-template-columns: 1fr; gap: 2px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sleeve">
+
+  <header class="header">
+    <svg class="groove" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="48" />
+      <circle cx="50" cy="50" r="39" />
+      <circle cx="50" cy="50" r="31" />
+      <circle cx="50" cy="50" r="23" class="label" />
+      <circle cx="50" cy="50" r="3.4" class="spindle" />
+    </svg>
+    <div class="header-text">
+      <p class="kicker">Spun &middot; Account</p>
+      <h1>Delete Your Data</h1>
+      <p class="dek">Remove specific information from Spun without deleting your whole account.</p>
+    </div>
+  </header>
+
+  <div class="meta-row">
+    <span>Applies to <b>Spun for iOS &amp; Android</b></span>
+    <span>Contact <b><a href="mailto:spun.app.developer@gmail.com">spun.app.developer@gmail.com</a></b></span>
+  </div>
+
+  <div class="tracklist">
+
+    <section class="track">
+      <span class="track-number">01</span>
+      <h2>What you can remove yourself, in the app</h2>
+      <div class="body">
+        <p>Each of these takes effect immediately, with no waiting period:</p>
+      </div>
+      <div class="data-table">
+        <div class="dt-row">
+          <span class="dt-name">Display name &amp; bio</span>
+          <span class="dt-desc">Profile &rarr; <b>Edit profile</b> &rarr; clear the field &rarr; Save</span>
+        </div>
+        <div class="dt-row">
+          <span class="dt-name">Favorite albums</span>
+          <span class="dt-desc">Profile &rarr; tap the <b>&times;</b> on any of your four favorite slots</span>
+        </div>
+        <div class="dt-row">
+          <span class="dt-name">Listen-later saves</span>
+          <span class="dt-desc">My Activity &rarr; tap <b>remove</b> next to a saved item</span>
+        </div>
+        <div class="dt-row">
+          <span class="dt-name">Lists</span>
+          <span class="dt-desc">Open a list &rarr; <b>delete the whole list</b>, or remove a single album from it</span>
+        </div>
+        <div class="dt-row">
+          <span class="dt-name">Follows &amp; blocks</span>
+          <span class="dt-desc"><b>Unfollow</b> someone from their profile, or <b>unblock</b> from your Blocked Users list</span>
+        </div>
+        <div class="dt-row">
+          <span class="dt-name">Recommendations</span>
+          <span class="dt-desc"><b>Delete</b> any recommendation from your inbox</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="track">
+      <span class="track-number">02</span>
+      <h2>Reviews and ratings</h2>
+      <div class="body">
+        <p>Individual reviews and ratings can't yet be removed one at a time from within the app. To have a specific review or rating deleted, email <a href="mailto:spun.app.developer@gmail.com">spun.app.developer@gmail.com</a> with your username and which one you'd like removed.</p>
+        <div class="callout">
+          <span class="callout-label">Response time</span>
+          <p>These requests are handled manually and completed within 7 days.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="track">
+      <span class="track-number">03</span>
+      <h2>Want everything gone?</h2>
+      <div class="body">
+        <p>If you'd rather remove all of your data at once, including your reviews and ratings, delete your account entirely from <strong>Profile &rarr; Delete account</strong>. See our <a href="./delete-account.html">account deletion page</a> for details on what that removes.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="footer">
+    <span class="side">Data deletion</span>
+    <span>&copy; 2026 Spun</span>
+  </footer>
+
+</div>
+
+</body>
+</html>
