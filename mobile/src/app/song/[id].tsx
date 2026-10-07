@@ -7,7 +7,6 @@ import {
     ScrollView,
     StyleSheet,
     ActivityIndicator,
-    Modal,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +18,7 @@ import { Touchable } from "../../components/Touchable";
 import { BackButton } from "../../components/BackButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ReportModal } from "../../components/ReportModal";
+import { AppModal } from "../../components/AppModal";
 
 interface RatingResponse {
     score: number | null;
@@ -276,7 +276,7 @@ export default function SongDetailScreen() {
                 <Text style={styles.error}>{like.error || listenLater.error || logError}</Text>
             )}
 
-            <Modal
+            <AppModal
                 visible={isRatingModalOpen}
                 transparent
                 animationType="fade"
@@ -292,9 +292,9 @@ export default function SongDetailScreen() {
                         <StarRating score={myRating} onRate={handleRate} />
                     </View>
                 </View>
-            </Modal>
+            </AppModal>
 
-            <Modal
+            <AppModal
                 visible={isMenuOpen}
                 transparent
                 animationType="fade"
@@ -326,7 +326,7 @@ export default function SongDetailScreen() {
                         </Text>
                     </Touchable>
                 </View>
-            </Modal>
+            </AppModal>
 
             {isReviewOpen && (
                 <View style={styles.formCard}>

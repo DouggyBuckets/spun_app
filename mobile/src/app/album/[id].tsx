@@ -7,7 +7,6 @@ import {
     TextInput,
     StyleSheet,
     ActivityIndicator,
-    Modal,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +18,7 @@ import { Touchable } from "../../components/Touchable";
 import { BackButton } from "../../components/BackButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ReportModal } from "../../components/ReportModal";
+import { AppModal } from "../../components/AppModal";
 
 interface Track {
     id: string;
@@ -351,7 +351,7 @@ export default function AlbumDetailScreen() {
                         <Text style={styles.error}>{like.error || listenLater.error || logError}</Text>
                     )}
 
-                    <Modal
+                    <AppModal
                         visible={isRatingModalOpen}
                         transparent
                         animationType="fade"
@@ -367,9 +367,9 @@ export default function AlbumDetailScreen() {
                                 <StarRating score={myRating} onRate={handleRate} />
                             </View>
                         </View>
-                    </Modal>
+                    </AppModal>
 
-                    <Modal
+                    <AppModal
                         visible={isMenuOpen}
                         transparent
                         animationType="fade"
@@ -413,7 +413,7 @@ export default function AlbumDetailScreen() {
                                 </Text>
                             </Touchable>
                         </View>
-                    </Modal>
+                    </AppModal>
 
                     <ReportModal
                         visible={reportingReviewId !== null}

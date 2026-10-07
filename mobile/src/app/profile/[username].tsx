@@ -7,7 +7,6 @@ import {
     TextInput,
     StyleSheet,
     ActivityIndicator,
-    Modal,
 } from "react-native";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +18,7 @@ import { Touchable } from "../../components/Touchable";
 import { BackButton } from "../../components/BackButton";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ReportModal } from "../../components/ReportModal";
+import { AppModal } from "../../components/AppModal";
 
 interface Profile {
     id: number;
@@ -415,7 +415,7 @@ export default function ProfileScreen() {
             {followError && <Text style={styles.error}>{followError}</Text>}
             {blockError && <Text style={styles.error}>{blockError}</Text>}
 
-            <Modal
+            <AppModal
                 visible={isMenuOpen}
                 transparent
                 animationType="fade"
@@ -440,7 +440,7 @@ export default function ProfileScreen() {
                         </Text>
                     </Touchable>
                 </View>
-            </Modal>
+            </AppModal>
 
             <ReportModal
                 visible={isReportOpen}
@@ -449,7 +449,7 @@ export default function ProfileScreen() {
                 target={{ targetType: "user", username: username as string }}
             />
 
-            <Modal
+            <AppModal
                 visible={isDeleteOpen}
                 transparent
                 animationType="fade"
@@ -497,7 +497,7 @@ export default function ProfileScreen() {
                         </View>
                     </View>
                 </View>
-            </Modal>
+            </AppModal>
 
             <Text style={styles.sectionTitle}>Favorites</Text>
             <View style={styles.favoritesGrid}>

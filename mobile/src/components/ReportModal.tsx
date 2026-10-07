@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { View, Text, TextInput, Modal, StyleSheet } from "react-native";
+import { View, Text, TextInput, StyleSheet } from "react-native";
 import { Touchable } from "./Touchable";
+import { AppModal } from "./AppModal";
 import { apiFetch, ApiError } from "../api/client";
 import { colors, spacing, radius, fonts } from "../constants/theme";
 
@@ -46,7 +47,7 @@ export function ReportModal({ visible, onClose, title, target }: ReportModalProp
     }
 
     return (
-        <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+        <AppModal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
             <Touchable style={styles.backdrop} onPress={handleClose} />
             <View style={styles.center} pointerEvents="box-none">
                 <View style={styles.card}>
@@ -83,7 +84,7 @@ export function ReportModal({ visible, onClose, title, target }: ReportModalProp
                     )}
                 </View>
             </View>
-        </Modal>
+        </AppModal>
     );
 }
 

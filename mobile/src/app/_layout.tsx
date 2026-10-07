@@ -5,9 +5,17 @@ import {
     SpaceGrotesk_700Bold,
 } from "@expo-google-fonts/space-grotesk";
 import { AuthProvider, useAuth } from "../context/AuthContext";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { colors } from "../constants/theme";
+
+// The UI was designed at phone width only. On web, constrain content to a
+// centered column instead of letting it stretch edge-to-edge on a desktop
+// browser window.
+const webContentStyle =
+    Platform.OS === "web"
+        ? { maxWidth: 600, width: "100%" as const, marginHorizontal: "auto" as const }
+        : null;
 
 function RootLayoutContent() {
     const { isLoading } = useAuth();
@@ -28,7 +36,7 @@ function RootLayoutContent() {
         <Stack
             screenOptions={{
                 headerShown: false,
-                contentStyle: { backgroundColor: colors.background },
+                contentStyle: [{ backgroundColor: colors.background }, webContentStyle],
             }}
         />
     );
